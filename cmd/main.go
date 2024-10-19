@@ -2,15 +2,11 @@ package main
 
 import (
 	"fmt"
+	"livoir-blog/internal/app"
+	"livoir-blog/pkg/database"
 	"log"
 	"strings"
 
-	"livoir-blog/internal/delivery/http"
-	"livoir-blog/internal/repository"
-	"livoir-blog/internal/usecase"
-	"livoir-blog/pkg/database"
-
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 )
 
@@ -43,18 +39,14 @@ func main() {
 		log.Fatalf("Failed to run migrations: %v", err)
 	}
 
-	postRepo := repository.NewPostRepository(db)
-	postUsecase := usecase.NewPostUsecase(postRepo)
-
-	r := gin.Default()
-	http.NewPostHandler(r, postUsecase)
+	router := app.SetupRouter(db)
 
 	port := viper.GetString("server.port")
 	if port == "" {
 		log.Fatalf("Server port not specified in configuration")
 	}
 
-	if err := r.Run(":" + port); err != nil {
+	if err := router.Run(":" + port); err != nil {
 		log.Fatalf("Failed to run server: %v", err)
 	}
 }
