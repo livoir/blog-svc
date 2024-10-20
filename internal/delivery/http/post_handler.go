@@ -44,7 +44,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {
-	var post domain.Post
+	var post domain.CreatePostDTO
 	if err := c.ShouldBindJSON(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return

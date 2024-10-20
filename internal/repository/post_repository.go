@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"fmt"
 	"livoir-blog/internal/domain"
 )
 
@@ -13,20 +14,36 @@ func NewPostRepository(db *sql.DB) domain.PostRepository {
 	return &postRepository{db}
 }
 
-func (r *postRepository) GetByID(id int64) (*domain.Post, error) {
-	post := &domain.Post{}
-	err := r.db.QueryRow("SELECT id, title, content FROM posts WHERE id = $1", id).Scan(&post.ID, &post.Title, &post.Content)
+func (r *postRepository) GetByID(id int64) (*domain.PostWithVersion, error) {
+	post := &domain.PostWithVersion{}
+	err := r.db.QueryRow("SELECT p.id, p.current_version_id, p.created_at, p.updated_at, p.deleted_at, pv.title, pv.content FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.current_version_id = $1", id).
+		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.DeletedAt, &post.Title, &post.Content)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
+		fmt.Println(err)
 		return nil, err
 	}
 	return post, nil
 }
 
 func (r *postRepository) Create(post *domain.Post) error {
-	query := `INSERT INTO posts (title, content, created_at) VALUES ($1, $2, $3) RETURNING id`
-	err := r.db.QueryRow(query, post.Title, post.Content, post.CreatedAt).Scan(&post.ID)
+	query := `INSERT INTO posts (created_at) VALUES ($1) RETURNING id`
+	err := r.db.QueryRow(query, post.CreatedAt).Scan(&post.ID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
 	return err
+}
+
+func (r *postRepository) Update(post *domain.Post) error {
+	query := `UPDATE posts SET current_version_id = $1, updated_at = $2 WHERE id = $3 RETURNING id`
+	err := r.db.QueryRow(query, post.CurrentVersionID, post.UpdatedAt, post.ID).Scan(&post.ID)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	return nil
 }

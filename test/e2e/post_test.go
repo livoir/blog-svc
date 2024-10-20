@@ -33,7 +33,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:13",
+		Image:        "postgres:17",
 		ExposedPorts: []string{"5432/tcp"},
 		Env: map[string]string{
 			"POSTGRES_DB":       "testdb",
@@ -90,7 +90,7 @@ func (suite *E2ETestSuite) TearDownSuite() {
 
 func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	// Test creating a post with potentially unsafe content
-	newPost := domain.Post{
+	newPost := domain.CreatePostDTO{
 		Title:   "Test Post",
 		Content: "This is a <script>alert('XSS')</script>test post content with <b>some bold text</b>",
 	}
@@ -102,25 +102,23 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	var createdPost domain.Post
+	var createdPost domain.CreatePostDTO
 	err := json.Unmarshal(w.Body.Bytes(), &createdPost)
 	assert.NoError(suite.T(), err)
-	assert.NotZero(suite.T(), createdPost.ID)
-	assert.Equal(suite.T(), newPost.Title, createdPost.Title)
-	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", createdPost.Content)
+	assert.NotZero(suite.T(), createdPost.PostId)
 
 	// Test getting the created post
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%d", createdPost.ID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%d", createdPost.PostId), nil)
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	var retrievedPost domain.Post
+	var retrievedPost domain.PostWithVersion
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), createdPost.ID, retrievedPost.ID)
-	assert.Equal(suite.T(), createdPost.Title, retrievedPost.Title)
+	assert.Equal(suite.T(), createdPost.PostId, retrievedPost.Post.ID)
+	assert.Equal(suite.T(), newPost.Title, retrievedPost.Title)
 	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", retrievedPost.Content)
 }
 

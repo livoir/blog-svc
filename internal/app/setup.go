@@ -11,7 +11,8 @@ import (
 
 func SetupRouter(db *sql.DB) *gin.Engine {
 	postRepo := repository.NewPostRepository(db)
-	postUsecase := usecase.NewPostUsecase(postRepo)
+	postVersionRepo := repository.NewPostVersionRepository(db)
+	postUsecase := usecase.NewPostUsecase(postRepo, postVersionRepo)
 
 	r := gin.Default()
 	http.NewPostHandler(r, postUsecase)
