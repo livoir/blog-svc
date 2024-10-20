@@ -18,6 +18,7 @@ func NewPostHandler(r *gin.Engine, usecase domain.PostUsecase) {
 		PostUsecase: usecase,
 	}
 	r.GET("/posts/:id", handler.GetPost)
+	r.POST("/posts", handler.CreatePost)
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
@@ -40,4 +41,19 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, post)
+}
+
+func (h *PostHandler) CreatePost(c *gin.Context) {
+	var post domain.Post
+	if err := c.ShouldBindJSON(&post); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	if err := h.PostUsecase.Create(&post); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+		return
+	}
+
+	c.JSON(http.StatusCreated, post)
 }

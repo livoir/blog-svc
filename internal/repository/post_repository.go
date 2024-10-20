@@ -24,3 +24,9 @@ func (r *postRepository) GetByID(id int64) (*domain.Post, error) {
 	}
 	return post, nil
 }
+
+func (r *postRepository) Create(post *domain.Post) error {
+	query := `INSERT INTO posts (title, content, created_at) VALUES ($1, $2, $3) RETURNING id`
+	err := r.db.QueryRow(query, post.Title, post.Content, post.CreatedAt).Scan(&post.ID)
+	return err
+}
