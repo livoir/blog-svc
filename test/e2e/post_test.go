@@ -89,10 +89,10 @@ func (suite *E2ETestSuite) TearDownSuite() {
 }
 
 func (suite *E2ETestSuite) TestCreateAndGetPost() {
-	// Test creating a post
+	// Test creating a post with potentially unsafe content
 	newPost := domain.Post{
 		Title:   "Test Post",
-		Content: "This is a test post content",
+		Content: "This is a <script>alert('XSS')</script>test post content with <b>some bold text</b>",
 	}
 	jsonValue, _ := json.Marshal(newPost)
 	req, _ := http.NewRequest(http.MethodPost, "/posts", bytes.NewBuffer(jsonValue))
@@ -107,7 +107,7 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	assert.NoError(suite.T(), err)
 	assert.NotZero(suite.T(), createdPost.ID)
 	assert.Equal(suite.T(), newPost.Title, createdPost.Title)
-	assert.Equal(suite.T(), newPost.Content, createdPost.Content)
+	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", createdPost.Content)
 
 	// Test getting the created post
 	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%d", createdPost.ID), nil)
@@ -121,7 +121,7 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createdPost.ID, retrievedPost.ID)
 	assert.Equal(suite.T(), createdPost.Title, retrievedPost.Title)
-	assert.Equal(suite.T(), createdPost.Content, retrievedPost.Content)
+	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", retrievedPost.Content)
 }
 
 func (suite *E2ETestSuite) TestGetNonExistentPost() {
