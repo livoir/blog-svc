@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 
 	"livoir-blog/internal/domain"
 
@@ -22,13 +21,11 @@ func NewPostHandler(r *gin.Engine, usecase domain.PostUsecase) {
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+	id := c.Param("id")
+	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-
 	post, err := h.PostUsecase.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})

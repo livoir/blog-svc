@@ -105,10 +105,10 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	var createdPost domain.CreatePostDTO
 	err := json.Unmarshal(w.Body.Bytes(), &createdPost)
 	assert.NoError(suite.T(), err)
-	assert.NotZero(suite.T(), createdPost.PostId)
+	assert.NotEmpty(suite.T(), createdPost.PostId)
 
 	// Test getting the created post
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%d", createdPost.PostId), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%s", createdPost.PostId), nil)
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 

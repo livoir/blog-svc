@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"fmt"
 	"livoir-blog/internal/domain"
 	"time"
 
@@ -23,7 +24,7 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 	}
 }
 
-func (u *postUsecase) GetByID(id int64) (*domain.PostWithVersion, error) {
+func (u *postUsecase) GetByID(id string) (*domain.PostWithVersion, error) {
 	return u.postRepo.GetByID(id)
 }
 
@@ -55,6 +56,7 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 		return err
 	}
 	post.CurrentVersionID = postVersion.ID
+	fmt.Println(post.CurrentVersionID)
 	err = u.postRepo.Update(tx, post)
 	if err != nil {
 		return err
