@@ -28,9 +28,10 @@ func (r *postRepository) GetByID(id int64) (*domain.PostWithVersion, error) {
 	return post, nil
 }
 
-func (r *postRepository) Create(post *domain.Post) error {
+func (r *postRepository) Create(tx domain.Transaction, post *domain.Post) error {
+	sqlTx := tx.GetTx()
 	query := `INSERT INTO posts (created_at) VALUES ($1) RETURNING id`
-	err := r.db.QueryRow(query, post.CreatedAt).Scan(&post.ID)
+	err := sqlTx.QueryRow(query, post.CreatedAt).Scan(&post.ID)
 	if err != nil {
 		fmt.Println(err)
 		return err
@@ -38,9 +39,10 @@ func (r *postRepository) Create(post *domain.Post) error {
 	return err
 }
 
-func (r *postRepository) Update(post *domain.Post) error {
+func (r *postRepository) Update(tx domain.Transaction, post *domain.Post) error {
+	sqlTx := tx.GetTx()
 	query := `UPDATE posts SET current_version_id = $1, updated_at = $2 WHERE id = $3 RETURNING id`
-	err := r.db.QueryRow(query, post.CurrentVersionID, post.UpdatedAt, post.ID).Scan(&post.ID)
+	err := sqlTx.QueryRow(query, post.CurrentVersionID, post.UpdatedAt, post.ID).Scan(&post.ID)
 	if err != nil {
 		fmt.Println(err)
 		return err

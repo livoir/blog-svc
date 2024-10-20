@@ -35,8 +35,8 @@ type PostWithVersion struct {
 }
 type PostRepository interface {
 	GetByID(id int64) (*PostWithVersion, error)
-	Create(post *Post) error
-	Update(post *Post) error
+	Create(tx Transaction, post *Post) error
+	Update(tx Transaction, post *Post) error
 }
 
 type PostUsecase interface {
@@ -56,6 +56,6 @@ type PostVersion struct {
 
 type PostVersionRepository interface {
 	GetByID(id int64) (*PostVersion, error)
-	Create(postVersion *PostVersion) error
-	Update(postVersion *PostVersion) error
+	Create(tx Transaction, postVersion *PostVersion) error
+	Update(tx Transaction, postVersion *PostVersion) error
 }

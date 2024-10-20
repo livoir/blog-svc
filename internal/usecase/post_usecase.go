@@ -10,13 +10,15 @@ import (
 type postUsecase struct {
 	postRepo        domain.PostRepository
 	postVersionRepo domain.PostVersionRepository
+	transactor      domain.Transactor
 	sanitizer       *bluemonday.Policy
 }
 
-func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersionRepository) domain.PostUsecase {
+func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersionRepository, transactor domain.Transactor) domain.PostUsecase {
 	return &postUsecase{
 		postRepo:        repo,
 		postVersionRepo: postVersionRepo,
+		transactor:      transactor,
 		sanitizer:       bluemonday.UGCPolicy(),
 	}
 }
@@ -31,7 +33,12 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 	post := &domain.Post{
 		CreatedAt: time.Now(),
 	}
-	err := u.postRepo.Create(post)
+	tx, err := u.transactor.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	err = u.postRepo.Create(tx, post)
 	if err != nil {
 		return err
 	}
@@ -43,14 +50,14 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 		Title:         request.Title,
 		Content:       request.Content,
 	}
-	err = u.postVersionRepo.Create(postVersion)
+	err = u.postVersionRepo.Create(tx, postVersion)
 	if err != nil {
 		return err
 	}
 	post.CurrentVersionID = postVersion.ID
-	err = u.postRepo.Update(post)
+	err = u.postRepo.Update(tx, post)
 	if err != nil {
 		return err
 	}
-	return nil
+	return tx.Commit()
 }
