@@ -23,7 +23,6 @@ func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	r.GET("/:id", handler.GetPost)
 	r.POST("", handler.CreatePost)
 	r.PUT("/:id", handler.UpdatePost)
-
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {

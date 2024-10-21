@@ -78,8 +78,8 @@ func (r *postRepository) Update(ctx context.Context, tx domain.Transaction, post
 func (r *postRepository) GetByIDForUpdate(ctx context.Context, tx domain.Transaction, id string) (*domain.Post, error) {
 	sqlTx := tx.GetTx()
 	post := &domain.Post{}
-	err := sqlTx.QueryRowContext(ctx, "SELECT id, current_version_id, created_at, updated_at, deleted_at FROM posts WHERE id = $1 FOR UPDATE", id).
-		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.DeletedAt)
+	err := sqlTx.QueryRowContext(ctx, "SELECT id, current_version_id, created_at, updated_at FROM posts WHERE id = $1 FOR UPDATE", id).
+		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Log.Error("No post versions found for post id", zap.String("id", id))

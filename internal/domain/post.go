@@ -23,11 +23,10 @@ type PostDTO struct {
 }
 
 type Post struct {
-	ID               string     `json:"id"`
-	CurrentVersionID string     `json:"current_version_id"`
-	CreatedAt        time.Time  `json:"created_at"`
-	UpdatedAt        time.Time  `json:"updated_at"`
-	DeletedAt        *time.Time `json:"deleted_at"`
+	ID               string    `json:"id"`
+	CurrentVersionID string    `json:"current_version_id"`
+	CreatedAt        time.Time `json:"created_at"`
+	UpdatedAt        time.Time `json:"updated_at"`
 }
 type PostWithVersion struct {
 	Post

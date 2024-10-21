@@ -12,6 +12,7 @@ import (
 	"livoir-blog/pkg/logger"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"testing"
 	"time"
 
@@ -30,7 +31,10 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
-	const migrationPath = "../../migrations"
+	var migrationPath = os.Getenv("LIVOIR_BLOG_MIGRATION_PATH")
+	if migrationPath == "" {
+		migrationPath = "../../migrations"
+	}
 	err := logger.Init()
 	if err != nil {
 		suite.T().Fatalf("failed to initialize logger: %s", err)
