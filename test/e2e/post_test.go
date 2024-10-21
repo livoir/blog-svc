@@ -9,6 +9,7 @@ import (
 	"livoir-blog/internal/app"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,11 +30,15 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
+	err := logger.Init()
+	if err != nil {
+		suite.T().Fatalf("failed to initialize logger: %s", err)
+	}
 	gin.SetMode(gin.TestMode)
 
 	ctx := context.Background()
 	req := testcontainers.ContainerRequest{
-		Image:        "postgres:13",
+		Image:        "postgres:17",
 		ExposedPorts: []string{"5432/tcp"},
 		Env: map[string]string{
 			"POSTGRES_DB":       "testdb",
@@ -90,7 +95,7 @@ func (suite *E2ETestSuite) TearDownSuite() {
 
 func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	// Test creating a post with potentially unsafe content
-	newPost := domain.Post{
+	newPost := domain.CreatePostDTO{
 		Title:   "Test Post",
 		Content: "This is a <script>alert('XSS')</script>test post content with <b>some bold text</b>",
 	}
@@ -102,25 +107,23 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	var createdPost domain.Post
+	var createdPost domain.CreatePostDTO
 	err := json.Unmarshal(w.Body.Bytes(), &createdPost)
 	assert.NoError(suite.T(), err)
-	assert.NotZero(suite.T(), createdPost.ID)
-	assert.Equal(suite.T(), newPost.Title, createdPost.Title)
-	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", createdPost.Content)
+	assert.NotEmpty(suite.T(), createdPost.PostId)
 
 	// Test getting the created post
-	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%d", createdPost.ID), nil)
+	req, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%s", createdPost.PostId), nil)
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	var retrievedPost domain.Post
+	var retrievedPost domain.PostWithVersion
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
-	assert.Equal(suite.T(), createdPost.ID, retrievedPost.ID)
-	assert.Equal(suite.T(), createdPost.Title, retrievedPost.Title)
+	assert.Equal(suite.T(), createdPost.PostId, retrievedPost.Post.ID)
+	assert.Equal(suite.T(), newPost.Title, retrievedPost.Title)
 	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", retrievedPost.Content)
 }
 
@@ -130,6 +133,42 @@ func (suite *E2ETestSuite) TestGetNonExistentPost() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
+
+func (suite *E2ETestSuite) TestUpdatePost() {
+	newPost := domain.CreatePostDTO{
+		Title:   "Test Post",
+		Content: "This is a <script>alert('XSS')</script>test post content with <b>some bold text</b>",
+	}
+	jsonValue, _ := json.Marshal(newPost)
+	req, _ := http.NewRequest(http.MethodPost, "/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var createdPost domain.CreatePostDTO
+	err := json.Unmarshal(w.Body.Bytes(), &createdPost)
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), createdPost.PostId)
+
+	updatedPost := domain.UpdatePostDTO{
+		Title:   "Updated Test Post",
+		Content: "This is an updated <script>alert('XSS')</script>test post content with <b>some bold text</b>"}
+	jsonValue, _ = json.Marshal(updatedPost)
+	req, _ = http.NewRequest("PUT", fmt.Sprintf("/posts/%s", createdPost.PostId), bytes.NewBuffer(jsonValue))
+
+	w = httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response domain.UpdatePostDTO
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), updatedPost.Title, response.Title)
+
 }
 
 func TestE2E(t *testing.T) {

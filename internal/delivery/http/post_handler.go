@@ -2,7 +2,6 @@ package http
 
 import (
 	"net/http"
-	"strconv"
 
 	"livoir-blog/internal/domain"
 
@@ -19,16 +18,15 @@ func NewPostHandler(r *gin.Engine, usecase domain.PostUsecase) {
 	}
 	r.GET("/posts/:id", handler.GetPost)
 	r.POST("/posts", handler.CreatePost)
+	r.PUT("/posts/:id", handler.UpdatePost)
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
-	idStr := c.Param("id")
-	id, err := strconv.ParseInt(idStr, 10, 64)
-	if err != nil {
+	id := c.Param("id")
+	if id == "" {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-
 	post, err := h.PostUsecase.GetByID(id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})
@@ -44,7 +42,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {
-	var post domain.Post
+	var post domain.CreatePostDTO
 	if err := c.ShouldBindJSON(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -56,4 +54,18 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, post)
+}
+
+func (h *PostHandler) UpdatePost(c *gin.Context) {
+	id := c.Param("id")
+	var post domain.UpdatePostDTO
+	if err := c.ShouldBindJSON(&post); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.PostUsecase.Update(id, &post); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		return
+	}
+	c.JSON(http.StatusOK, post)
 }
