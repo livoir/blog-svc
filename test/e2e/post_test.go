@@ -9,6 +9,7 @@ import (
 	"livoir-blog/internal/app"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/logger"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -29,6 +30,10 @@ type E2ETestSuite struct {
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
+	err := logger.Init()
+	if err != nil {
+		suite.T().Fatalf("failed to initialize logger: %s", err)
+	}
 	gin.SetMode(gin.TestMode)
 
 	ctx := context.Background()
@@ -128,6 +133,42 @@ func (suite *E2ETestSuite) TestGetNonExistentPost() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+}
+
+func (suite *E2ETestSuite) TestUpdatePost() {
+	newPost := domain.CreatePostDTO{
+		Title:   "Test Post",
+		Content: "This is a <script>alert('XSS')</script>test post content with <b>some bold text</b>",
+	}
+	jsonValue, _ := json.Marshal(newPost)
+	req, _ := http.NewRequest(http.MethodPost, "/posts", bytes.NewBuffer(jsonValue))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusCreated, w.Code)
+
+	var createdPost domain.CreatePostDTO
+	err := json.Unmarshal(w.Body.Bytes(), &createdPost)
+	assert.NoError(suite.T(), err)
+	assert.NotEmpty(suite.T(), createdPost.PostId)
+
+	updatedPost := domain.UpdatePostDTO{
+		Title:   "Updated Test Post",
+		Content: "This is an updated <script>alert('XSS')</script>test post content with <b>some bold text</b>"}
+	jsonValue, _ = json.Marshal(updatedPost)
+	req, _ = http.NewRequest("PUT", fmt.Sprintf("/posts/%s", createdPost.PostId), bytes.NewBuffer(jsonValue))
+
+	w = httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(suite.T(), http.StatusOK, w.Code)
+
+	var response domain.UpdatePostDTO
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
+	assert.Equal(suite.T(), updatedPost.Title, response.Title)
+
 }
 
 func TestE2E(t *testing.T) {

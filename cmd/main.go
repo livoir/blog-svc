@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
@@ -18,12 +17,12 @@ func main() {
 		log.Fatalf("Failed to initialize logger: %v", err)
 	}
 	defer logger.Sync()
-
+	logger.Log.Info("Logger initialized")
 	// Initialize Viper
 	if err := initConfig(); err != nil {
 		logger.Log.Fatal("Failed to load config", zap.Error(err))
 	}
-
+	logger.Log.Error("Config loaded")
 	// Read database connection details from Viper
 	dbHost := viper.GetString("db.host")
 	dbPort := viper.GetString("db.port")
@@ -57,6 +56,7 @@ func main() {
 	if err := router.Run(":" + port); err != nil {
 		logger.Log.Fatal("Failed to run server", zap.Error(err))
 	}
+	logger.Log.Info("Shutting down server")
 }
 
 func initConfig() error {
@@ -73,7 +73,8 @@ func initConfig() error {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			logger.Log.Warn("No config file found. Ensure all required configuration is set via environment variables.")
 		} else {
-			return fmt.Errorf("fatal error config file: %s", err)
+			logger.Log.Error("Failed to load config", zap.Error(err))
+			return err
 		}
 	}
 

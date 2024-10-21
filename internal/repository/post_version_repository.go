@@ -35,5 +35,25 @@ func (r *postVersionRepository) GetByID(id string) (*domain.PostVersion, error) 
 }
 
 func (r *postVersionRepository) Update(tx domain.Transaction, postVersion *domain.PostVersion) error {
-	return fmt.Errorf("not implemented")
+	sqlTx := tx.GetTx()
+	query := `UPDATE post_versions SET title = $2, content = $3, published_at = $4 WHERE id = $1`
+	_, err := sqlTx.Exec(query, postVersion.ID, postVersion.Title, postVersion.Content, postVersion.PublishedAt)
+	if err != nil {
+		logger.Log.Error("Failed to update post version", zap.Error(err))
+		return err
+	}
+	return nil
+}
+
+// GetLatestByPostIDForUpdate implements domain.PostVersionRepository.
+func (r *postVersionRepository) GetLatestByPostIDForUpdate(tx domain.Transaction, postID string) (*domain.PostVersion, error) {
+	sqlTx := tx.GetTx()
+	postVersion := &domain.PostVersion{}
+	err := sqlTx.QueryRow("SELECT id, version_number, post_id, created_at, title, content, published_at FROM post_versions WHERE post_id = $1 ORDER BY version_number DESC FOR UPDATE", postID).
+		Scan(&postVersion.ID, &postVersion.VersionNumber, &postVersion.PostID, &postVersion.CreatedAt, &postVersion.Title, &postVersion.Content, &postVersion.PublishedAt)
+	if err != nil {
+		logger.Log.Error("Failed to get latest post version by post id for update", zap.Error(err))
+		return nil, err
+	}
+	return postVersion, nil
 }

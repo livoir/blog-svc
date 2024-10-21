@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"errors"
 	"livoir-blog/internal/domain"
 	"time"
 
@@ -58,6 +59,53 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 	err = u.postRepo.Update(tx, post)
 	if err != nil {
 		return err
+	}
+	return tx.Commit()
+}
+
+func (u *postUsecase) Update(id string, request *domain.UpdatePostDTO) error {
+	// Sanitize the post content
+	request.Content = u.sanitizer.Sanitize(request.Content)
+	tx, err := u.transactor.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+	// Check if the post exists
+	post, err := u.postRepo.GetByIDForUpdate(tx, id)
+	if err != nil {
+		return err
+	}
+	if post == nil {
+		return errors.New("post not found")
+	}
+	// Get latest post version
+	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(tx, id)
+	if err != nil {
+		return err
+	}
+	if postVersion == nil {
+		return errors.New("post version not found")
+	}
+	if postVersion.PublishedAt == nil {
+		postVersion.Title = request.Title
+		postVersion.Content = request.Content
+		err = u.postVersionRepo.Update(tx, postVersion)
+		if err != nil {
+			return err
+		}
+	} else {
+		newPostVersion := &domain.PostVersion{
+			VersionNumber: postVersion.VersionNumber + 1,
+			PostID:        id,
+			CreatedAt:     time.Now(),
+			Title:         request.Title,
+			Content:       request.Content,
+		}
+		err = u.postVersionRepo.Create(tx, newPostVersion)
+		if err != nil {
+			return err
+		}
 	}
 	return tx.Commit()
 }
