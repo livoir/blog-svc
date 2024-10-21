@@ -4,16 +4,24 @@ import (
 	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/logger"
 	"log"
 	"strings"
 
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func main() {
+	// Initialize logger
+	if err := logger.Init(); err != nil {
+		log.Fatalf("Failed to initialize logger: %v", err)
+	}
+	defer logger.Sync()
+
 	// Initialize Viper
 	if err := initConfig(); err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		logger.Log.Fatal("Failed to load config", zap.Error(err))
 	}
 
 	// Read database connection details from Viper
@@ -25,29 +33,29 @@ func main() {
 
 	// Validate that all required configuration is present
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
-		log.Fatalf("Missing required database configuration")
+		logger.Log.Fatal("Missing required database configuration")
 	}
 
 	db, err := database.NewPostgresConnection(dbHost, dbPort, dbUser, dbPassword, dbName)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Log.Fatal("Failed to connect to database", zap.Error(err))
 	}
 	defer db.Close()
 
 	// Run migrations
 	if err := database.RunMigrations(db, "./migrations"); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		logger.Log.Fatal("Failed to run migrations", zap.Error(err))
 	}
 
 	router := app.SetupRouter(db)
 
 	port := viper.GetString("server.port")
 	if port == "" {
-		log.Fatalf("Server port not specified in configuration")
+		logger.Log.Fatal("Server port not specified in configuration")
 	}
 
 	if err := router.Run(":" + port); err != nil {
-		log.Fatalf("Failed to run server: %v", err)
+		logger.Log.Fatal("Failed to run server", zap.Error(err))
 	}
 }
 
@@ -63,7 +71,7 @@ func initConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("No config file found. Ensure all required configuration is set via environment variables.")
+			logger.Log.Warn("No config file found. Ensure all required configuration is set via environment variables.")
 		} else {
 			return fmt.Errorf("fatal error config file: %s", err)
 		}

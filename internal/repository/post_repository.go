@@ -2,9 +2,11 @@ package repository
 
 import (
 	"database/sql"
-	"fmt"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/logger"
 	"livoir-blog/pkg/ulid"
+
+	"go.uber.org/zap"
 )
 
 type postRepository struct {
@@ -23,7 +25,7 @@ func (r *postRepository) GetByID(id string) (*domain.PostWithVersion, error) {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
-		fmt.Println(err)
+		logger.Log.Error("Failed to get post by id", zap.Error(err))
 		return nil, err
 	}
 	return post, nil
@@ -35,7 +37,7 @@ func (r *postRepository) Create(tx domain.Transaction, post *domain.Post) error 
 	query := `INSERT INTO posts (id, created_at) VALUES ($1, $2) RETURNING id`
 	err := sqlTx.QueryRow(query, post.ID, post.CreatedAt).Scan(&post.ID)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("Failed to create post", zap.Error(err))
 		return err
 	}
 	return err
@@ -46,7 +48,7 @@ func (r *postRepository) Update(tx domain.Transaction, post *domain.Post) error 
 	query := `UPDATE posts SET current_version_id = $1, updated_at = $2 WHERE id = $3 RETURNING id`
 	err := sqlTx.QueryRow(query, post.CurrentVersionID, post.UpdatedAt, post.ID).Scan(&post.ID)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("Failed to update post", zap.Error(err))
 		return err
 	}
 	return nil

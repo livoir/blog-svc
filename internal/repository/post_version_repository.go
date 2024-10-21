@@ -4,7 +4,10 @@ import (
 	"database/sql"
 	"fmt"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/logger"
 	"livoir-blog/pkg/ulid"
+
+	"go.uber.org/zap"
 )
 
 type postVersionRepository struct {
@@ -21,7 +24,7 @@ func (r *postVersionRepository) Create(tx domain.Transaction, postVersion *domai
 	query := `INSERT INTO post_versions (id, version_number, post_id, created_at, title, content) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`
 	err := sqlTx.QueryRow(query, postVersion.ID, postVersion.VersionNumber, postVersion.PostID, postVersion.CreatedAt, postVersion.Title, postVersion.Content).Scan(&postVersion.ID)
 	if err != nil {
-		fmt.Println(err)
+		logger.Log.Error("Failed to create post version", zap.Error(err))
 		return err
 	}
 	return nil
