@@ -2,27 +2,28 @@ package http
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
+	"strings"
 
 	"livoir-blog/internal/domain"
 
 	"github.com/gin-gonic/gin"
+	"github.com/oklog/ulid/v2"
 )
 
 type PostHandler struct {
 	PostUsecase domain.PostUsecase
 }
 
-func NewPostHandler(r *gin.Engine, usecase domain.PostUsecase) {
+func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	handler := &PostHandler{
 		PostUsecase: usecase,
 	}
-	posts := r.Group("/posts")
-	{
-		posts.GET("/:id", handler.GetPost)
-		posts.POST("", handler.CreatePost)
-		posts.PUT("/:id", handler.UpdatePost)
-	}
+	r.GET("/:id", handler.GetPost)
+	r.POST("", handler.CreatePost)
+	r.PUT("/:id", handler.UpdatePost)
+
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
@@ -31,7 +32,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	post, err := h.PostUsecase.GetByID(id)
+	post, err := h.PostUsecase.GetByID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})
 		return
@@ -59,13 +60,11 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.PostUsecase.Create(&post); err != nil {
+
+	response, err := h.PostUsecase.Create(c.Request.Context(), &post)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
 		return
-	}
-	response := domain.CreatePostResponseDTO{
-		PostID: post.PostID,
-		Title:  post.Title,
 	}
 	c.JSON(http.StatusCreated, response)
 }
@@ -85,12 +84,10 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.PostUsecase.Update(id, &post); err != nil {
+	response, err := h.PostUsecase.Update(c.Request.Context(), id, &post)
+	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
 		return
-	}
-	response := domain.UpdatePostResponseDTO{
-		Title: post.Title,
 	}
 	c.JSON(http.StatusOK, response)
 }
@@ -103,12 +100,20 @@ func validateUpdatePostDTO(request *domain.UpdatePostDTO) error {
 }
 
 func validateCreatePostDTO(request *domain.CreatePostDTO) error {
-	if request.Title == "" || request.Content == "" {
-		return errors.New("title and content are required")
+	missingFields := []string{}
+	if request.Title == "" {
+		missingFields = append(missingFields, "title")
+	}
+	if request.Content == "" {
+		missingFields = append(missingFields, "content")
+	}
+	if len(missingFields) > 0 {
+		return fmt.Errorf("%s required", strings.Join(missingFields, " and "))
 	}
 	return nil
 }
 
 func isValidID(id string) bool {
-	return len(id) == 26
+	_, err := ulid.Parse(id)
+	return err == nil
 }

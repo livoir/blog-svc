@@ -113,7 +113,7 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	var createdPost domain.CreatePostResponseDTO
+	var createdPost domain.PostResponseDTO
 	err = json.Unmarshal(w.Body.Bytes(), &createdPost)
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), createdPost.PostID)
@@ -140,6 +140,13 @@ func (suite *E2ETestSuite) TestGetNonExistentPost() {
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
+	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+
+	req, err = http.NewRequest(http.MethodGet, "/posts/01JAQDCB26N888RY1ZQ4N6N9YN", nil)
+	assert.NoError(suite.T(), err)
+	w = httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
@@ -158,7 +165,7 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 
 	assert.Equal(suite.T(), http.StatusCreated, w.Code)
 
-	var createdPost domain.CreatePostResponseDTO
+	var createdPost domain.PostResponseDTO
 	err = json.Unmarshal(w.Body.Bytes(), &createdPost)
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), createdPost.PostID)
@@ -176,7 +183,7 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	var response domain.UpdatePostResponseDTO
+	var response domain.PostResponseDTO
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), "Updated Test Post", response.Title)
@@ -193,7 +200,7 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
-	assert.Equal(suite.T(), "Test Post", newPost.Title)
+	assert.Equal(suite.T(), "Updated Test Post", retrievedPost.Title)
 	assert.Equal(suite.T(), "This is an updated test post content with <b>some bold text</b>", retrievedPost.Content)
 
 }

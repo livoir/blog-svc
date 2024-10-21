@@ -1,27 +1,18 @@
 package domain
 
 import (
+	"context"
 	"time"
 )
 
 type CreatePostDTO struct {
-	PostID  string `json:"post_id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
-}
-
-type CreatePostResponseDTO struct {
-	PostID string `json:"post_id"`
-	Title  string `json:"title"`
 }
 
 type UpdatePostDTO struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
-}
-
-type UpdatePostResponseDTO struct {
-	Title string `json:"title"`
 }
 
 type PostDTO struct {
@@ -44,16 +35,16 @@ type PostWithVersion struct {
 	Content string `json:"content"`
 }
 type PostRepository interface {
-	GetByID(id string) (*PostWithVersion, error)
-	Create(tx Transaction, post *Post) error
-	Update(tx Transaction, post *Post) error
-	GetByIDForUpdate(tx Transaction, id string) (*Post, error)
+	GetByID(ctx context.Context, id string) (*PostWithVersion, error)
+	Create(ctx context.Context, tx Transaction, post *Post) error
+	Update(ctx context.Context, tx Transaction, post *Post) error
+	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Post, error)
 }
 
 type PostUsecase interface {
-	GetByID(id string) (*PostWithVersion, error)
-	Create(post *CreatePostDTO) error
-	Update(id string, post *UpdatePostDTO) error
+	GetByID(ctx context.Context, id string) (*PostWithVersion, error)
+	Create(ctx context.Context, post *CreatePostDTO) (*PostResponseDTO, error)
+	Update(ctx context.Context, id string, post *UpdatePostDTO) (*PostResponseDTO, error)
 }
 
 type PostVersion struct {
@@ -67,10 +58,9 @@ type PostVersion struct {
 }
 
 type PostVersionRepository interface {
-	GetByID(id string) (*PostVersion, error)
-	Create(tx Transaction, postVersion *PostVersion) error
-	Update(tx Transaction, postVersion *PostVersion) error
-	GetLatestByPostIDForUpdate(tx Transaction, postID string) (*PostVersion, error)
+	Create(ctx context.Context, tx Transaction, postVersion *PostVersion) error
+	Update(ctx context.Context, tx Transaction, postVersion *PostVersion) error
+	GetLatestByPostIDForUpdate(ctx context.Context, tx Transaction, postID string) (*PostVersion, error)
 }
 
 type PostResponseDTO struct {

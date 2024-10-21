@@ -37,7 +37,10 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 	r := gin.New()
 	r.Use(gin.Logger())
 	r.Use(gin.Recovery())
-	http.NewPostHandler(r, postUsecase)
+	postApi := r.Group("/posts")
+	{
+		http.NewPostHandler(postApi, postUsecase)
+	}
 
 	return r, nil
 }

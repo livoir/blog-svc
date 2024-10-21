@@ -1,6 +1,7 @@
 package usecase
 
 import (
+	"context"
 	"errors"
 	"livoir-blog/internal/domain"
 	"time"
@@ -27,11 +28,11 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 	}, nil
 }
 
-func (u *postUsecase) GetByID(id string) (*domain.PostWithVersion, error) {
-	return u.postRepo.GetByID(id)
+func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
+	return u.postRepo.GetByID(ctx, id)
 }
 
-func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
+func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO) (*domain.PostResponseDTO, error) {
 	// Sanitize the post content
 	request.Content = u.sanitizer.Sanitize(request.Content)
 	request.Title = u.sanitizer.Sanitize(request.Title)
@@ -40,14 +41,13 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 	}
 	tx, err := u.transactor.BeginTx()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
-	err = u.postRepo.Create(tx, post)
+	err = u.postRepo.Create(ctx, tx, post)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	request.PostID = post.ID
 	postVersion := &domain.PostVersion{
 		VersionNumber: 1,
 		PostID:        post.ID,
@@ -55,49 +55,54 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 		Title:         request.Title,
 		Content:       request.Content,
 	}
-	err = u.postVersionRepo.Create(tx, postVersion)
+	err = u.postVersionRepo.Create(ctx, tx, postVersion)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	post.CurrentVersionID = postVersion.ID
-	err = u.postRepo.Update(tx, post)
+	err = u.postRepo.Update(ctx, tx, post)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	return tx.Commit()
+	tx.Commit()
+	return &domain.PostResponseDTO{
+		PostID:  post.ID,
+		Title:   request.Title,
+		Content: request.Content,
+	}, nil
 }
 
-func (u *postUsecase) Update(id string, request *domain.UpdatePostDTO) error {
+func (u *postUsecase) Update(ctx context.Context, id string, request *domain.UpdatePostDTO) (*domain.PostResponseDTO, error) {
 	// Sanitize the post content
 	request.Content = u.sanitizer.Sanitize(request.Content)
 	request.Title = u.sanitizer.Sanitize(request.Title)
 	tx, err := u.transactor.BeginTx()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer tx.Rollback()
 	// Check if the post exists
-	post, err := u.postRepo.GetByIDForUpdate(tx, id)
+	post, err := u.postRepo.GetByIDForUpdate(ctx, tx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if post == nil {
-		return errors.New("post not found")
+		return nil, errors.New("post not found")
 	}
 	// Get latest post version
-	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(tx, id)
+	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if postVersion == nil {
-		return errors.New("post version not found")
+		return nil, errors.New("post version not found")
 	}
 	if postVersion.PublishedAt == nil {
 		postVersion.Title = request.Title
 		postVersion.Content = request.Content
-		err = u.postVersionRepo.Update(tx, postVersion)
+		err = u.postVersionRepo.Update(ctx, tx, postVersion)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	} else {
 		newPostVersion := &domain.PostVersion{
@@ -107,15 +112,20 @@ func (u *postUsecase) Update(id string, request *domain.UpdatePostDTO) error {
 			Title:         request.Title,
 			Content:       request.Content,
 		}
-		err = u.postVersionRepo.Create(tx, newPostVersion)
+		err = u.postVersionRepo.Create(ctx, tx, newPostVersion)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		post.CurrentVersionID = newPostVersion.ID
-		err = u.postRepo.Update(tx, post)
+		err = u.postRepo.Update(ctx, tx, post)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	return tx.Commit()
+	tx.Commit()
+	return &domain.PostResponseDTO{
+		PostID:  post.ID,
+		Title:   postVersion.Title,
+		Content: postVersion.Content,
+	}, nil
 }
