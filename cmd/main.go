@@ -4,7 +4,6 @@ import (
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
-	"log"
 	"strings"
 
 	"github.com/spf13/viper"
@@ -14,15 +13,14 @@ import (
 func main() {
 	// Initialize logger
 	if err := logger.Init(); err != nil {
-		log.Fatalf("Failed to initialize logger: %v", err)
+		return
 	}
 	defer logger.Sync()
-	logger.Log.Info("Logger initialized")
 	// Initialize Viper
 	if err := initConfig(); err != nil {
-		logger.Log.Fatal("Failed to load config", zap.Error(err))
+		logger.Log.Error("Failed to load config", zap.Error(err))
+		return
 	}
-	logger.Log.Error("Config loaded")
 	// Read database connection details from Viper
 	dbHost := viper.GetString("db.host")
 	dbPort := viper.GetString("db.port")
@@ -32,31 +30,39 @@ func main() {
 
 	// Validate that all required configuration is present
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
-		logger.Log.Fatal("Missing required database configuration")
+		logger.Log.Error("Missing required database configuration")
+		return
 	}
 
 	db, err := database.NewPostgresConnection(dbHost, dbPort, dbUser, dbPassword, dbName)
 	if err != nil {
-		logger.Log.Fatal("Failed to connect to database", zap.Error(err))
+		logger.Log.Error("Failed to connect to database", zap.Error(err))
+		return
 	}
 	defer db.Close()
 
 	// Run migrations
 	if err := database.RunMigrations(db, "./migrations"); err != nil {
-		logger.Log.Fatal("Failed to run migrations", zap.Error(err))
+		logger.Log.Error("Failed to run migrations", zap.Error(err))
+		return
 	}
 
-	router := app.SetupRouter(db)
+	router, err := app.SetupRouter(db)
+	if err != nil {
+		logger.Log.Error("Failed to setup router", zap.Error(err))
+		return
+	}
 
 	port := viper.GetString("server.port")
 	if port == "" {
-		logger.Log.Fatal("Server port not specified in configuration")
+		logger.Log.Error("Server port not specified in configuration")
+		return
 	}
 
 	if err := router.Run(":" + port); err != nil {
-		logger.Log.Fatal("Failed to run server", zap.Error(err))
+		logger.Log.Error("Failed to run server", zap.Error(err))
+		return
 	}
-	logger.Log.Info("Shutting down server")
 }
 
 func initConfig() error {
@@ -74,9 +80,8 @@ func initConfig() error {
 			logger.Log.Warn("No config file found. Ensure all required configuration is set via environment variables.")
 		} else {
 			logger.Log.Error("Failed to load config", zap.Error(err))
-			return err
 		}
+		return err
 	}
-
 	return nil
 }

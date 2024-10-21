@@ -5,15 +5,25 @@ import (
 )
 
 type CreatePostDTO struct {
-	PostId  string `json:"post_id"`
+	PostID  string `json:"post_id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
+}
+
+type CreatePostResponseDTO struct {
+	PostID string `json:"post_id"`
+	Title  string `json:"title"`
 }
 
 type UpdatePostDTO struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
+
+type UpdatePostResponseDTO struct {
+	Title string `json:"title"`
+}
+
 type PostDTO struct {
 	ID               string `json:"id"`
 	Title            string `json:"title"`
@@ -61,4 +71,10 @@ type PostVersionRepository interface {
 	Create(tx Transaction, postVersion *PostVersion) error
 	Update(tx Transaction, postVersion *PostVersion) error
 	GetLatestByPostIDForUpdate(tx Transaction, postID string) (*PostVersion, error)
+}
+
+type PostResponseDTO struct {
+	PostID  string `json:"post_id"`
+	Title   string `json:"title"`
+	Content string `json:"content"`
 }

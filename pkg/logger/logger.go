@@ -1,6 +1,8 @@
 package logger
 
 import (
+	"errors"
+
 	"go.uber.org/zap"
 )
 
@@ -16,5 +18,8 @@ func Init() error {
 }
 
 func Sync() error {
+	if Log == nil {
+		return errors.New("logger not initialized")
+	}
 	return Log.Sync()
 }

@@ -2,6 +2,7 @@ package database
 
 import (
 	"database/sql"
+	"errors"
 	"livoir-blog/internal/domain"
 )
 
@@ -25,8 +26,11 @@ type SQLTransactor struct {
 	db *sql.DB
 }
 
-func NewSQLTransactor(db *sql.DB) domain.Transactor {
-	return &SQLTransactor{db: db}
+func NewSQLTransactor(db *sql.DB) (domain.Transactor, error) {
+	if db == nil {
+		return nil, errors.New("db is nil")
+	}
+	return &SQLTransactor{db: db}, nil
 }
 
 func (s *SQLTransactor) BeginTx() (domain.Transaction, error) {

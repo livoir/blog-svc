@@ -6,18 +6,38 @@ import (
 	"livoir-blog/internal/repository"
 	"livoir-blog/internal/usecase"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/logger"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
-func SetupRouter(db *sql.DB) *gin.Engine {
-	postRepo := repository.NewPostRepository(db)
-	postVersionRepo := repository.NewPostVersionRepository(db)
-	transactor := database.NewSQLTransactor(db)
-	postUsecase := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
+func SetupRouter(db *sql.DB) (*gin.Engine, error) {
+	postRepo, err := repository.NewPostRepository(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize post repository", zap.Error(err))
+		return nil, err
+	}
+	postVersionRepo, err := repository.NewPostVersionRepository(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize post version repository", zap.Error(err))
+		return nil, err
+	}
+	transactor, err := database.NewSQLTransactor(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize transactor", zap.Error(err))
+		return nil, err
+	}
+	postUsecase, err := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
+	if err != nil {
+		logger.Log.Error("Failed to initialize post usecase", zap.Error(err))
+		return nil, err
+	}
 
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Logger())
+	r.Use(gin.Recovery())
 	http.NewPostHandler(r, postUsecase)
 
-	return r
+	return r, nil
 }

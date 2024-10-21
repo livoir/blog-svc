@@ -22,4 +22,6 @@ CREATE TABLE IF NOT EXISTS post_versions (
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS post_versions;
+DROP TABLE IF EXISTS posts;
 -- +goose StatementEnd

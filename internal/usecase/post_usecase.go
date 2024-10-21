@@ -15,13 +15,16 @@ type postUsecase struct {
 	sanitizer       *bluemonday.Policy
 }
 
-func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersionRepository, transactor domain.Transactor) domain.PostUsecase {
+func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersionRepository, transactor domain.Transactor) (domain.PostUsecase, error) {
+	if repo == nil || postVersionRepo == nil || transactor == nil {
+		return nil, errors.New("nil repository or transactor")
+	}
 	return &postUsecase{
 		postRepo:        repo,
 		postVersionRepo: postVersionRepo,
 		transactor:      transactor,
 		sanitizer:       bluemonday.UGCPolicy(),
-	}
+	}, nil
 }
 
 func (u *postUsecase) GetByID(id string) (*domain.PostWithVersion, error) {
@@ -31,6 +34,7 @@ func (u *postUsecase) GetByID(id string) (*domain.PostWithVersion, error) {
 func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 	// Sanitize the post content
 	request.Content = u.sanitizer.Sanitize(request.Content)
+	request.Title = u.sanitizer.Sanitize(request.Title)
 	post := &domain.Post{
 		CreatedAt: time.Now(),
 	}
@@ -43,7 +47,7 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 	if err != nil {
 		return err
 	}
-	request.PostId = post.ID
+	request.PostID = post.ID
 	postVersion := &domain.PostVersion{
 		VersionNumber: 1,
 		PostID:        post.ID,
@@ -66,6 +70,7 @@ func (u *postUsecase) Create(request *domain.CreatePostDTO) error {
 func (u *postUsecase) Update(id string, request *domain.UpdatePostDTO) error {
 	// Sanitize the post content
 	request.Content = u.sanitizer.Sanitize(request.Content)
+	request.Title = u.sanitizer.Sanitize(request.Title)
 	tx, err := u.transactor.BeginTx()
 	if err != nil {
 		return err
@@ -103,6 +108,11 @@ func (u *postUsecase) Update(id string, request *domain.UpdatePostDTO) error {
 			Content:       request.Content,
 		}
 		err = u.postVersionRepo.Create(tx, newPostVersion)
+		if err != nil {
+			return err
+		}
+		post.CurrentVersionID = newPostVersion.ID
+		err = u.postRepo.Update(tx, post)
 		if err != nil {
 			return err
 		}

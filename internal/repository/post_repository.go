@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/logger"
 	"livoir-blog/pkg/ulid"
@@ -13,15 +14,17 @@ type postRepository struct {
 	db *sql.DB
 }
 
-func NewPostRepository(db *sql.DB) domain.PostRepository {
-	logger.Log.Info("Logger in post repo initialized")
-	return &postRepository{db}
+func NewPostRepository(db *sql.DB) (domain.PostRepository, error) {
+	if db == nil {
+		return nil, errors.New("db is nil")
+	}
+	return &postRepository{db}, nil
 }
 
 func (r *postRepository) GetByID(id string) (*domain.PostWithVersion, error) {
 	post := &domain.PostWithVersion{}
-	err := r.db.QueryRow("SELECT p.id, p.current_version_id, p.created_at, p.updated_at, p.deleted_at, pv.title, pv.content FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.id = $1", id).
-		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.DeletedAt, &post.Title, &post.Content)
+	err := r.db.QueryRow("SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.id = $1", id).
+		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -33,7 +36,6 @@ func (r *postRepository) GetByID(id string) (*domain.PostWithVersion, error) {
 }
 
 func (r *postRepository) Create(tx domain.Transaction, post *domain.Post) error {
-	logger.Log.Info("Creating post")
 	post.ID = ulid.New()
 	sqlTx := tx.GetTx()
 	query := `INSERT INTO posts (id, created_at) VALUES ($1, $2) RETURNING id`

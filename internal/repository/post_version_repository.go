@@ -2,6 +2,7 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/logger"
@@ -14,8 +15,11 @@ type postVersionRepository struct {
 	db *sql.DB
 }
 
-func NewPostVersionRepository(db *sql.DB) domain.PostVersionRepository {
-	return &postVersionRepository{db: db}
+func NewPostVersionRepository(db *sql.DB) (domain.PostVersionRepository, error) {
+	if db == nil {
+		return nil, errors.New("db is nil")
+	}
+	return &postVersionRepository{db: db}, nil
 }
 
 func (r *postVersionRepository) Create(tx domain.Transaction, postVersion *domain.PostVersion) error {
