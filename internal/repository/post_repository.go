@@ -24,14 +24,18 @@ func NewPostRepository(db *sql.DB) (domain.PostRepository, error) {
 
 func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
 	post := &domain.PostWithVersion{}
-	err := r.db.QueryRowContext(ctx, "SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.id = $1", id).
-		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content, &post.VersionNumber)
+	var currentVersionID sql.NullString
+	err := r.db.QueryRowContext(ctx, "SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number FROM posts p JOIN post_versions pv ON p.id = pv.post_id WHERE p.id = $1 ORDER BY pv.version_number DESC LIMIT 1", id).
+		Scan(&post.ID, &currentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content, &post.VersionNumber)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		logger.Log.Error("Failed to get post by id", zap.Error(err))
 		return nil, err
+	}
+	if currentVersionID.Valid {
+		post.CurrentVersionID = currentVersionID.String
 	}
 	return post, nil
 }
