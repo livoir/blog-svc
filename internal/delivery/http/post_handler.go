@@ -23,6 +23,7 @@ func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	r.GET("/:id", handler.GetPost)
 	r.POST("", handler.CreatePost)
 	r.PUT("/:id", handler.UpdatePost)
+	r.POST("/:id/publish", handler.PublishPost)
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
@@ -87,6 +88,20 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 	response, err := h.PostUsecase.Update(c.Request.Context(), id, &post)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		return
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *PostHandler) PublishPost(c *gin.Context) {
+	id := c.Param("id")
+	if id == "" || !isValidID(id) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+	response, err := h.PostUsecase.Publish(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to publish post"})
 		return
 	}
 	c.JSON(http.StatusOK, response)

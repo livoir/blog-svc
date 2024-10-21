@@ -45,6 +45,7 @@ type PostUsecase interface {
 	GetByID(ctx context.Context, id string) (*PostWithVersion, error)
 	Create(ctx context.Context, post *CreatePostDTO) (*PostResponseDTO, error)
 	Update(ctx context.Context, id string, post *UpdatePostDTO) (*PostResponseDTO, error)
+	Publish(ctx context.Context, id string) (*PublishResponseDTO, error)
 }
 
 type PostVersion struct {
@@ -67,4 +68,9 @@ type PostResponseDTO struct {
 	PostID  string `json:"post_id"`
 	Title   string `json:"title"`
 	Content string `json:"content"`
+}
+
+type PublishResponseDTO struct {
+	PostID      string     `json:"post_id"`
+	PublishedAt *time.Time `json:"published_at"`
 }
