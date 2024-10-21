@@ -45,11 +45,14 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err != nil {
+	defer func(tx domain.Transaction) {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
 			tx.Rollback()
 		}
-	}()
+	}(tx)
 	err = u.postRepo.Create(ctx, tx, post)
 	if err != nil {
 		return nil, err
@@ -88,11 +91,14 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err != nil {
+	defer func(tx domain.Transaction) {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
 			tx.Rollback()
 		}
-	}()
+	}(tx)
 	// Check if the post exists
 	post, err := u.postRepo.GetByIDForUpdate(ctx, tx, id)
 	if err != nil {
@@ -150,11 +156,14 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 	if err != nil {
 		return nil, err
 	}
-	defer func() {
-		if err != nil {
+	defer func(tx domain.Transaction) {
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
 			tx.Rollback()
 		}
-	}()
+	}(tx)
 	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)
 	if err != nil {
 		return nil, err
@@ -192,5 +201,7 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 	return &domain.PublishResponseDTO{
 		PostID:      postVersion.PostID,
 		PublishedAt: postVersion.PublishedAt,
+		Title:       postVersion.Title,
+		Content:     postVersion.Content,
 	}, nil
 }

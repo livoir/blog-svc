@@ -253,6 +253,8 @@ func (suite *E2ETestSuite) TestPublishPost() {
 	err = json.Unmarshal(w.Body.Bytes(), &publishedPost)
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), publishedPost.PublishedAt)
+	assert.Equal(suite.T(), "Test Publish Post", publishedPost.Title)
+	assert.Equal(suite.T(), "This is a test post content for publishing", publishedPost.Content)
 
 	// Update the post
 	updatedPost := domain.UpdatePostDTO{
@@ -299,6 +301,8 @@ func (suite *E2ETestSuite) TestPublishPost() {
 	assert.NoError(suite.T(), err)
 	assert.NotEmpty(suite.T(), republishedPost.PostID)
 	assert.NotEmpty(suite.T(), republishedPost.PublishedAt)
+	assert.Equal(suite.T(), "Updated Test Publish Post", republishedPost.Title)
+	assert.Equal(suite.T(), "This is an updated test post content for publishing", republishedPost.Content)
 }
 
 func TestE2E(t *testing.T) {

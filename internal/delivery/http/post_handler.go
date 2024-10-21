@@ -26,9 +26,17 @@ func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	r.POST("/:id/publish", handler.PublishPost)
 }
 
-func (h *PostHandler) GetPost(c *gin.Context) {
+func (h *PostHandler) validateAndGetPostID(c *gin.Context) (string, bool) {
 	id := c.Param("id")
 	if id == "" || !isValidID(id) {
+		return "", false
+	}
+	return id, true
+}
+
+func (h *PostHandler) GetPost(c *gin.Context) {
+	id, ok := h.validateAndGetPostID(c)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
@@ -71,8 +79,8 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" || !isValidID(id) {
+	id, ok := h.validateAndGetPostID(c)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
@@ -94,8 +102,8 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) PublishPost(c *gin.Context) {
-	id := c.Param("id")
-	if id == "" || !isValidID(id) {
+	id, ok := h.validateAndGetPostID(c)
+	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}

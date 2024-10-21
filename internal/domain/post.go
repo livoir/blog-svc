@@ -73,4 +73,6 @@ type PostResponseDTO struct {
 type PublishResponseDTO struct {
 	PostID      string     `json:"post_id"`
 	PublishedAt *time.Time `json:"published_at"`
+	Title       string     `json:"title"`
+	Content     string     `json:"content"`
 }
