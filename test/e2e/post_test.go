@@ -132,6 +132,9 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
 	assert.Equal(suite.T(), "Test Post", retrievedPost.Title)
 	assert.Equal(suite.T(), "This is a test post content with <b>some bold text</b>", retrievedPost.Content)
+	assert.NotEmpty(suite.T(), retrievedPost.CreatedAt)
+	assert.NotEmpty(suite.T(), retrievedPost.UpdatedAt)
+	assert.Equal(suite.T(), retrievedPost.CurrentVersionID, retrievedPost.Post.CurrentVersionID)
 }
 
 func (suite *E2ETestSuite) TestGetNonExistentPost() {
@@ -140,14 +143,21 @@ func (suite *E2ETestSuite) TestGetNonExistentPost() {
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
+	var response map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusBadRequest, w.Code)
+	assert.Equal(suite.T(), "Invalid post ID", response["error"])
 
 	req, err = http.NewRequest(http.MethodGet, "/posts/01JAQDCB26N888RY1ZQ4N6N9YN", nil)
 	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
+	err = json.Unmarshal(w.Body.Bytes(), &response)
+	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
+	assert.Equal(suite.T(), "Post not found", response["error"])
 }
 
 func (suite *E2ETestSuite) TestUpdatePost() {
@@ -202,7 +212,8 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
 	assert.Equal(suite.T(), "Updated Test Post", retrievedPost.Title)
 	assert.Equal(suite.T(), "This is an updated test post content with <b>some bold text</b>", retrievedPost.Content)
-
+	assert.Equal(suite.T(), int64(1), retrievedPost.VersionNumber)
+	assert.Equal(suite.T(), retrievedPost.CreatedAt, retrievedPost.UpdatedAt)
 }
 
 func TestE2E(t *testing.T) {

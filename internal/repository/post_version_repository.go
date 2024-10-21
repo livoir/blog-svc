@@ -44,8 +44,8 @@ func (r *postVersionRepository) Create(ctx context.Context, tx domain.Transactio
 
 func (r *postVersionRepository) Update(ctx context.Context, tx domain.Transaction, postVersion *domain.PostVersion) error {
 	sqlTx := tx.GetTx()
-	query := `UPDATE post_versions SET title = $2, content = $3, published_at = $4 WHERE id = $1`
-	result, err := sqlTx.ExecContext(ctx, query, postVersion.ID, postVersion.Title, postVersion.Content, postVersion.PublishedAt)
+	query := `UPDATE post_versions SET title = $2, content = $3, published_at = $4, version_number = $5 WHERE id = $1`
+	result, err := sqlTx.ExecContext(ctx, query, postVersion.ID, postVersion.Title, postVersion.Content, postVersion.PublishedAt, postVersion.VersionNumber)
 	if err != nil {
 		logger.Log.Error("Failed to update post version", zap.Error(err))
 		return err
@@ -61,7 +61,6 @@ func (r *postVersionRepository) Update(ctx context.Context, tx domain.Transactio
 	return nil
 }
 
-// GetLatestByPostIDForUpdate implements domain.PostVersionRepository.
 func (r *postVersionRepository) GetLatestByPostIDForUpdate(ctx context.Context, tx domain.Transaction, postID string) (*domain.PostVersion, error) {
 	sqlTx := tx.GetTx()
 	postVersion := &domain.PostVersion{}

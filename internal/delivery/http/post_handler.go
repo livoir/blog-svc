@@ -43,9 +43,10 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		return
 	}
 	response := domain.PostWithVersion{
-		Post:    post.Post,
-		Title:   post.Title,
-		Content: post.Content,
+		Post:          post.Post,
+		Title:         post.Title,
+		Content:       post.Content,
+		VersionNumber: post.VersionNumber,
 	}
 	c.JSON(http.StatusOK, response)
 }

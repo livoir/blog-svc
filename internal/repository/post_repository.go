@@ -24,8 +24,8 @@ func NewPostRepository(db *sql.DB) (domain.PostRepository, error) {
 
 func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
 	post := &domain.PostWithVersion{}
-	err := r.db.QueryRowContext(ctx, "SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.id = $1", id).
-		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content)
+	err := r.db.QueryRowContext(ctx, "SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number FROM posts p JOIN post_versions pv ON p.current_version_id = pv.id WHERE p.id = $1", id).
+		Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content, &post.VersionNumber)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -39,8 +39,8 @@ func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostWi
 func (r *postRepository) Create(ctx context.Context, tx domain.Transaction, post *domain.Post) error {
 	post.ID = ulid.New()
 	sqlTx := tx.GetTx()
-	query := `INSERT INTO posts (id, created_at) VALUES ($1, $2)`
-	result, err := sqlTx.ExecContext(ctx, query, post.ID, post.CreatedAt)
+	query := `INSERT INTO posts (id, created_at, updated_at) VALUES ($1, $2, $3)`
+	result, err := sqlTx.ExecContext(ctx, query, post.ID, post.CreatedAt, post.UpdatedAt)
 	if err != nil {
 		logger.Log.Error("Failed to create post", zap.Error(err))
 		return err

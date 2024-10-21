@@ -31,8 +31,9 @@ type Post struct {
 }
 type PostWithVersion struct {
 	Post
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	Title         string `json:"title"`
+	Content       string `json:"content"`
+	VersionNumber int64  `json:"version_number"`
 }
 type PostRepository interface {
 	GetByID(ctx context.Context, id string) (*PostWithVersion, error)

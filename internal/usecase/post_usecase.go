@@ -36,14 +36,20 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 	// Sanitize the post content
 	request.Content = u.sanitizer.Sanitize(request.Content)
 	request.Title = u.sanitizer.Sanitize(request.Title)
+	now := time.Now()
 	post := &domain.Post{
-		CreatedAt: time.Now(),
+		CreatedAt: now,
+		UpdatedAt: now,
 	}
 	tx, err := u.transactor.BeginTx()
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 	err = u.postRepo.Create(ctx, tx, post)
 	if err != nil {
 		return nil, err
@@ -64,7 +70,10 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 	if err != nil {
 		return nil, err
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 	return &domain.PostResponseDTO{
 		PostID:  post.ID,
 		Title:   request.Title,
@@ -80,7 +89,11 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 	// Check if the post exists
 	post, err := u.postRepo.GetByIDForUpdate(ctx, tx, id)
 	if err != nil {
@@ -122,7 +135,10 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 			return nil, err
 		}
 	}
-	tx.Commit()
+	err = tx.Commit()
+	if err != nil {
+		return nil, err
+	}
 	return &domain.PostResponseDTO{
 		PostID:  post.ID,
 		Title:   postVersion.Title,
