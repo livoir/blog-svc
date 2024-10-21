@@ -1,25 +1,26 @@
 package main
 
 import (
-	"fmt"
-	"log"
+	"livoir-blog/internal/app"
+	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/logger"
 	"strings"
 
-	"livoir-blog/internal/delivery/http"
-	"livoir-blog/internal/repository"
-	"livoir-blog/internal/usecase"
-	"livoir-blog/pkg/database"
-
-	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func main() {
+	// Initialize logger
+	if err := logger.Init(); err != nil {
+		return
+	}
+	defer logger.Sync()
 	// Initialize Viper
 	if err := initConfig(); err != nil {
-		log.Fatalf("Failed to load config: %v", err)
+		logger.Log.Error("Failed to load config", zap.Error(err))
+		return
 	}
-
 	// Read database connection details from Viper
 	dbHost := viper.GetString("db.host")
 	dbPort := viper.GetString("db.port")
@@ -29,33 +30,38 @@ func main() {
 
 	// Validate that all required configuration is present
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
-		log.Fatalf("Missing required database configuration")
+		logger.Log.Error("Missing required database configuration")
+		return
 	}
 
 	db, err := database.NewPostgresConnection(dbHost, dbPort, dbUser, dbPassword, dbName)
 	if err != nil {
-		log.Fatalf("Failed to connect to database: %v", err)
+		logger.Log.Error("Failed to connect to database", zap.Error(err))
+		return
 	}
 	defer db.Close()
 
 	// Run migrations
 	if err := database.RunMigrations(db, "./migrations"); err != nil {
-		log.Fatalf("Failed to run migrations: %v", err)
+		logger.Log.Error("Failed to run migrations", zap.Error(err))
+		return
 	}
 
-	postRepo := repository.NewPostRepository(db)
-	postUsecase := usecase.NewPostUsecase(postRepo)
-
-	r := gin.Default()
-	http.NewPostHandler(r, postUsecase)
+	router, err := app.SetupRouter(db)
+	if err != nil {
+		logger.Log.Error("Failed to setup router", zap.Error(err))
+		return
+	}
 
 	port := viper.GetString("server.port")
 	if port == "" {
-		log.Fatalf("Server port not specified in configuration")
+		logger.Log.Error("Server port not specified in configuration")
+		return
 	}
 
-	if err := r.Run(":" + port); err != nil {
-		log.Fatalf("Failed to run server: %v", err)
+	if err := router.Run(":" + port); err != nil {
+		logger.Log.Error("Failed to run server", zap.Error(err))
+		return
 	}
 }
 
@@ -71,11 +77,11 @@ func initConfig() error {
 
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			log.Println("No config file found. Ensure all required configuration is set via environment variables.")
+			logger.Log.Warn("No config file found. Ensure all required configuration is set via environment variables.")
 		} else {
-			return fmt.Errorf("fatal error config file: %s", err)
+			logger.Log.Error("Failed to load config", zap.Error(err))
 		}
+		return err
 	}
-
 	return nil
 }
