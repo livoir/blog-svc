@@ -122,7 +122,7 @@ func (h *PostHandler) DeletePostVersion(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	err := h.PostUsecase.DeletePostVersion(c.Request.Context(), id)
+	err := h.PostUsecase.DeletePostVersionByPostID(c.Request.Context(), id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post version"})
 		return

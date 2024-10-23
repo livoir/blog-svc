@@ -330,7 +330,6 @@ func (suite *E2ETestSuite) TestDeleteUnpublishedPost() {
 	assert.NoError(suite.T(), err)
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
-
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
 	// Try to get the deleted post
@@ -339,7 +338,7 @@ func (suite *E2ETestSuite) TestDeleteUnpublishedPost() {
 	w = httptest.NewRecorder()
 	suite.router.ServeHTTP(w, req)
 
-	assert.Equal(suite.T(), http.StatusOK, w.Code)
+	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
 }
 
 func (suite *E2ETestSuite) TestDeletePublishedPost() {

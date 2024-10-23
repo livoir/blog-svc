@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/logger"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
+	"go.uber.org/zap"
 )
 
 type postUsecase struct {
@@ -206,13 +208,38 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 	}, nil
 }
 
-func (u *postUsecase) DeletePostVersion(ctx context.Context, id string) error {
+func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) error {
 	tx, err := u.transactor.BeginTx()
 	if err != nil {
 		return err
 	}
 	defer func(tx domain.Transaction) {
-		tx.Rollback()
+		if p := recover(); p != nil {
+			tx.Rollback()
+			panic(p)
+		} else if err != nil {
+			tx.Rollback()
+		}
 	}(tx)
-	return u.postVersionRepo.Delete(ctx, tx, id)
+	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if postVersion == nil {
+		logger.Log.Error("Post version not found", zap.String("postID", id))
+		return errors.New("post version not found")
+	}
+	if postVersion.PublishedAt != nil {
+		logger.Log.Error("Post version is published", zap.String("postID", id))
+		return errors.New("post version is published")
+	}
+	err = u.postVersionRepo.Delete(ctx, tx, postVersion.ID)
+	if err != nil {
+		return err
+	}
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+	return nil
 }
