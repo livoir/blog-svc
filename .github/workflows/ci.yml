@@ -17,7 +17,7 @@ jobs:
     steps:
     # Checkout the code from the repository
     - name: Checkout code
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
 
     # Set up Go environment
     - name: Set up Go
@@ -27,14 +27,14 @@ jobs:
 
     # Cache Go modules
     - name: Cache Go modules
-      uses: actions/cache@v3
+      uses: actions/cache@v4
       with:
         path: |
           ~/.cache/go-build
           ~/go/pkg/mod
-        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}-v1
         restore-keys: |
-          ${{ runner.os }}-go-
+          ${{ runner.os }}-go-v1-
 
     # Install dependencies
     - name: Install Dependencies
@@ -42,8 +42,14 @@ jobs:
 
     # Run tests
     - name: Run Tests
-      run: go test ./... -v
+      run: go test ./... -race -coverprofile=coverage.txt -covermode=atomic
+
+    # Upload Coverage Report
+    - name: Upload Coverage Report
+      uses: codecov/codecov-action@v3
+      with:
+        file: coverage.txt
 
     # Build the Go application
     - name: Build
-      run: go build -v ./...
+      run: go build -v -ldflags="-w -s" ./...
