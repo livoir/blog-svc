@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
+	"net/http"
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
@@ -31,7 +33,14 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 }
 
 func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
-	return u.postRepo.GetByID(ctx, id)
+	post, err := u.postRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if post == nil {
+		return nil, common.ErrPostNotFound
+	}
+	return post, nil
 }
 
 func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO) (*domain.PostResponseDTO, error) {
@@ -107,7 +116,7 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 		return nil, err
 	}
 	if post == nil {
-		return nil, errors.New("post not found")
+		return nil, common.ErrPostNotFound
 	}
 	// Get latest post version
 	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)
@@ -115,7 +124,7 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 		return nil, err
 	}
 	if postVersion == nil {
-		return nil, errors.New("post version not found")
+		return nil, common.ErrPostVersionNotFound
 	}
 	if postVersion.PublishedAt == nil {
 		postVersion.Title = request.Title
@@ -171,17 +180,17 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 		return nil, err
 	}
 	if postVersion == nil {
-		return nil, errors.New("post version not found")
+		return nil, common.ErrPostVersionNotFound
 	}
 	post, err := u.postRepo.GetByIDForUpdate(ctx, tx, id)
 	if err != nil {
 		return nil, err
 	}
 	if post == nil {
-		return nil, errors.New("post not found")
+		return nil, common.ErrPostNotFound
 	}
 	if postVersion.PublishedAt != nil {
-		return nil, errors.New("post already published")
+		return nil, common.NewCustomError(http.StatusForbidden, "post already published")
 	}
 	now := time.Now()
 	postVersion.PublishedAt = &now
@@ -227,11 +236,11 @@ func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) 
 	}
 	if postVersion == nil {
 		logger.Log.Error("Post version not found", zap.String("postID", id))
-		return errors.New("post version not found")
+		return common.ErrPostVersionNotFound
 	}
 	if postVersion.PublishedAt != nil {
 		logger.Log.Error("Post version is published", zap.String("postID", id))
-		return errors.New("post version is published")
+		return common.NewCustomError(http.StatusConflict, "post version is published")
 	}
 	err = u.postVersionRepo.Delete(ctx, tx, postVersion.ID)
 	if err != nil {

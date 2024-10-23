@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
@@ -43,12 +44,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 	}
 	post, err := h.PostUsecase.GetByID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch post"})
-		return
-	}
-
-	if post == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "Post not found"})
+		handleError(c, err)
 		return
 	}
 	response := domain.PostWithVersion{
@@ -67,13 +63,12 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		return
 	}
 	if err := validateCreatePostDTO(&post); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handleError(c, err)
 		return
 	}
-
 	response, err := h.PostUsecase.Create(c.Request.Context(), &post)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create post"})
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusCreated, response)
@@ -91,12 +86,12 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		return
 	}
 	if err := validateUpdatePostDTO(&post); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handleError(c, err)
 		return
 	}
 	response, err := h.PostUsecase.Update(c.Request.Context(), id, &post)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update post"})
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -110,7 +105,7 @@ func (h *PostHandler) PublishPost(c *gin.Context) {
 	}
 	response, err := h.PostUsecase.Publish(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to publish post"})
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, response)
@@ -124,7 +119,7 @@ func (h *PostHandler) DeletePostVersion(c *gin.Context) {
 	}
 	err := h.PostUsecase.DeletePostVersionByPostID(c.Request.Context(), id)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post version"})
+		handleError(c, err)
 		return
 	}
 	c.JSON(http.StatusOK, gin.H{"message": "Post version deleted"})
@@ -154,4 +149,21 @@ func validateCreatePostDTO(request *domain.CreatePostDTO) error {
 func isValidID(id string) bool {
 	_, err := ulid.Parse(id)
 	return err == nil
+}
+
+func handleError(c *gin.Context, err error) {
+	if customErr, ok := err.(*common.CustomError); ok {
+		switch customErr.StatusCode {
+		case http.StatusNotFound:
+			c.JSON(http.StatusNotFound, gin.H{"error": customErr.Message})
+		case http.StatusForbidden:
+			c.JSON(http.StatusForbidden, gin.H{"error": customErr.Message})
+		case http.StatusConflict:
+			c.JSON(http.StatusConflict, gin.H{"error": customErr.Message})
+		default:
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+		}
+		return
+	}
+	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 }

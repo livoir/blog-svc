@@ -161,7 +161,7 @@ func (suite *E2ETestSuite) TestGetNonExistentPost() {
 	err = json.Unmarshal(w.Body.Bytes(), &response)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), http.StatusNotFound, w.Code)
-	assert.Equal(suite.T(), "Post not found", response["error"])
+	assert.Equal(suite.T(), "The requested post was not found", response["error"])
 }
 
 func (suite *E2ETestSuite) TestUpdatePost() {
@@ -376,7 +376,7 @@ func (suite *E2ETestSuite) TestDeletePublishedPost() {
 	suite.router.ServeHTTP(w, req)
 
 	// Expect a bad request or forbidden status, as deleting a published post should not be allowed
-	assert.Equal(suite.T(), http.StatusInternalServerError, w.Code)
+	assert.Equal(suite.T(), http.StatusConflict, w.Code)
 
 	// Verify the post still exists
 	req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%s", createdPost.PostID), nil)
