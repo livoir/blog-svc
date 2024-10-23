@@ -76,3 +76,20 @@ func (r *postVersionRepository) GetLatestByPostIDForUpdate(ctx context.Context, 
 	}
 	return postVersion, nil
 }
+
+func (r *postVersionRepository) Delete(ctx context.Context, tx domain.Transaction, id string) error {
+	sqlTx := tx.GetTx()
+	postVersion, err := r.GetLatestByPostIDForUpdate(ctx, tx, id)
+	if err != nil {
+		return err
+	}
+	if postVersion.PublishedAt != nil {
+		return errors.New("post version is published")
+	}
+	_, err = sqlTx.ExecContext(ctx, "DELETE FROM post_versions WHERE id = $1", postVersion.ID)
+	if err != nil {
+		logger.Log.Error("Failed to delete post version", zap.Error(err))
+		return err
+	}
+	return nil
+}

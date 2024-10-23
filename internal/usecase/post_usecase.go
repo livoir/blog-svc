@@ -205,3 +205,14 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 		Content:     postVersion.Content,
 	}, nil
 }
+
+func (u *postUsecase) DeletePostVersion(ctx context.Context, id string) error {
+	tx, err := u.transactor.BeginTx()
+	if err != nil {
+		return err
+	}
+	defer func(tx domain.Transaction) {
+		tx.Rollback()
+	}(tx)
+	return u.postVersionRepo.Delete(ctx, tx, id)
+}

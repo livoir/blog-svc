@@ -46,6 +46,7 @@ type PostUsecase interface {
 	Create(ctx context.Context, post *CreatePostDTO) (*PostResponseDTO, error)
 	Update(ctx context.Context, id string, post *UpdatePostDTO) (*PostResponseDTO, error)
 	Publish(ctx context.Context, id string) (*PublishResponseDTO, error)
+	DeletePostVersion(ctx context.Context, id string) error
 }
 
 type PostVersion struct {
@@ -62,6 +63,7 @@ type PostVersionRepository interface {
 	Create(ctx context.Context, tx Transaction, postVersion *PostVersion) error
 	Update(ctx context.Context, tx Transaction, postVersion *PostVersion) error
 	GetLatestByPostIDForUpdate(ctx context.Context, tx Transaction, postID string) (*PostVersion, error)
+	Delete(ctx context.Context, tx Transaction, id string) error
 }
 
 type PostResponseDTO struct {
