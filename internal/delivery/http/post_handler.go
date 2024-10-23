@@ -24,6 +24,7 @@ func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	r.POST("", handler.CreatePost)
 	r.PUT("/:id", handler.UpdatePost)
 	r.POST("/:id/publish", handler.PublishPost)
+	r.DELETE("/:id", handler.DeletePostVersion)
 }
 
 func (h *PostHandler) validateAndGetPostID(c *gin.Context) (string, bool) {
@@ -113,6 +114,20 @@ func (h *PostHandler) PublishPost(c *gin.Context) {
 		return
 	}
 	c.JSON(http.StatusOK, response)
+}
+
+func (h *PostHandler) DeletePostVersion(c *gin.Context) {
+	id, ok := h.validateAndGetPostID(c)
+	if !ok {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
+		return
+	}
+	err := h.PostUsecase.DeletePostVersionByPostID(c.Request.Context(), id)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete post version"})
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "Post version deleted"})
 }
 
 func validateUpdatePostDTO(request *domain.UpdatePostDTO) error {

@@ -64,7 +64,7 @@ func (r *postVersionRepository) Update(ctx context.Context, tx domain.Transactio
 func (r *postVersionRepository) GetLatestByPostIDForUpdate(ctx context.Context, tx domain.Transaction, postID string) (*domain.PostVersion, error) {
 	sqlTx := tx.GetTx()
 	postVersion := &domain.PostVersion{}
-	err := sqlTx.QueryRowContext(ctx, "SELECT id, version_number, post_id, created_at, title, content, published_at FROM post_versions WHERE post_id = $1 ORDER BY version_number DESC FOR UPDATE", postID).
+	err := sqlTx.QueryRowContext(ctx, "SELECT id, version_number, post_id, created_at, title, content, published_at FROM post_versions WHERE post_id = $1 ORDER BY version_number DESC LIMIT 1 FOR UPDATE", postID).
 		Scan(&postVersion.ID, &postVersion.VersionNumber, &postVersion.PostID, &postVersion.CreatedAt, &postVersion.Title, &postVersion.Content, &postVersion.PublishedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
@@ -72,6 +72,41 @@ func (r *postVersionRepository) GetLatestByPostIDForUpdate(ctx context.Context, 
 			return nil, errors.New("post version not found")
 		}
 		logger.Log.Error("Failed to get latest post version by post id for update", zap.Error(err))
+		return nil, err
+	}
+	return postVersion, nil
+}
+
+func (r *postVersionRepository) Delete(ctx context.Context, tx domain.Transaction, id string) error {
+	sqlTx := tx.GetTx()
+	result, err := sqlTx.ExecContext(ctx, "DELETE FROM post_versions WHERE id = $1", id)
+	if err != nil {
+		logger.Log.Error("Failed to delete post version", zap.Error(err))
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		logger.Log.Error("Failed to get rows affected", zap.Error(err))
+		return err
+	}
+	if rowsAffected == 0 {
+		logger.Log.Error("Post version not found or already deleted", zap.String("id", id))
+		return errors.New("post version not found or already deleted")
+	}
+	return nil
+}
+
+func (r *postVersionRepository) GetByIDForUpdate(ctx context.Context, tx domain.Transaction, id string) (*domain.PostVersion, error) {
+	sqlTx := tx.GetTx()
+	postVersion := &domain.PostVersion{}
+	err := sqlTx.QueryRowContext(ctx, "SELECT id, version_number, post_id, created_at, title, content, published_at FROM post_versions WHERE id = $1 FOR UPDATE", id).
+		Scan(&postVersion.ID, &postVersion.VersionNumber, &postVersion.PostID, &postVersion.CreatedAt, &postVersion.Title, &postVersion.Content, &postVersion.PublishedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Log.Error("No post versions found for id", zap.String("id", id))
+			return nil, errors.New("post version not found")
+		}
+		logger.Log.Error("Failed to get post version by id for update", zap.Error(err))
 		return nil, err
 	}
 	return postVersion, nil
