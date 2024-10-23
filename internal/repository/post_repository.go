@@ -3,10 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
 	"livoir-blog/pkg/ulid"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -17,7 +18,7 @@ type postRepository struct {
 
 func NewPostRepository(db *sql.DB) (domain.PostRepository, error) {
 	if db == nil {
-		return nil, errors.New("db is nil")
+		return nil, common.NewCustomError(http.StatusInternalServerError, "db is nil")
 	}
 	return &postRepository{db}, nil
 }
@@ -32,7 +33,7 @@ func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostWi
 			return nil, nil
 		}
 		logger.Log.Error("Failed to get post by id", zap.Error(err))
-		return nil, err
+		return nil, common.ErrInternalServerError
 	}
 	if currentVersionID.Valid {
 		post.CurrentVersionID = currentVersionID.String
@@ -47,15 +48,15 @@ func (r *postRepository) Create(ctx context.Context, tx domain.Transaction, post
 	result, err := sqlTx.ExecContext(ctx, query, post.ID, post.CreatedAt, post.UpdatedAt)
 	if err != nil {
 		logger.Log.Error("Failed to create post", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		logger.Log.Error("Failed to get rows affected", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	if rowsAffected == 0 {
-		return errors.New("failed to create post")
+		return common.NewCustomError(http.StatusInternalServerError, "failed to create post")
 	}
 	return nil
 }
@@ -66,15 +67,15 @@ func (r *postRepository) Update(ctx context.Context, tx domain.Transaction, post
 	result, err := sqlTx.ExecContext(ctx, query, post.CurrentVersionID, post.UpdatedAt, post.ID)
 	if err != nil {
 		logger.Log.Error("Failed to update post", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		logger.Log.Error("Failed to get rows affected", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	if rowsAffected == 0 {
-		return errors.New("failed to update post")
+		return common.NewCustomError(http.StatusInternalServerError, "failed to update post")
 	}
 	return nil
 }
@@ -87,10 +88,10 @@ func (r *postRepository) GetByIDForUpdate(ctx context.Context, tx domain.Transac
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Log.Error("No post versions found for post id", zap.String("id", id))
-			return nil, errors.New("post not found")
+			return nil, common.ErrPostNotFound
 		}
 		logger.Log.Error("Failed to get latest post by id for update", zap.Error(err))
-		return nil, err
+		return nil, common.ErrInternalServerError
 	}
 	return post, nil
 }

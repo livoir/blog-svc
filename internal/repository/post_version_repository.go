@@ -5,8 +5,10 @@ import (
 	"database/sql"
 	"errors"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
 	"livoir-blog/pkg/ulid"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -29,15 +31,15 @@ func (r *postVersionRepository) Create(ctx context.Context, tx domain.Transactio
 	result, err := sqlTx.ExecContext(ctx, query, postVersion.ID, postVersion.VersionNumber, postVersion.PostID, postVersion.CreatedAt, postVersion.Title, postVersion.Content)
 	if err != nil {
 		logger.Log.Error("Failed to create post version", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		logger.Log.Error("Failed to get rows affected", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	if rowsAffected == 0 {
-		return errors.New("failed to create post version")
+		return common.NewCustomError(http.StatusInternalServerError, "failed to create post version")
 	}
 	return nil
 }
@@ -48,15 +50,15 @@ func (r *postVersionRepository) Update(ctx context.Context, tx domain.Transactio
 	result, err := sqlTx.ExecContext(ctx, query, postVersion.ID, postVersion.Title, postVersion.Content, postVersion.PublishedAt, postVersion.VersionNumber)
 	if err != nil {
 		logger.Log.Error("Failed to update post version", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		logger.Log.Error("Failed to get rows affected", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	if rowsAffected == 0 {
-		return errors.New("failed to update post version")
+		return common.NewCustomError(http.StatusInternalServerError, "failed to update post version")
 	}
 	return nil
 }
@@ -69,10 +71,10 @@ func (r *postVersionRepository) GetLatestByPostIDForUpdate(ctx context.Context, 
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Log.Error("No post versions found for post id", zap.String("postID", postID))
-			return nil, errors.New("post version not found")
+			return nil, common.ErrPostNotFound
 		}
 		logger.Log.Error("Failed to get latest post version by post id for update", zap.Error(err))
-		return nil, err
+		return nil, common.ErrInternalServerError
 	}
 	return postVersion, nil
 }
@@ -82,16 +84,16 @@ func (r *postVersionRepository) Delete(ctx context.Context, tx domain.Transactio
 	result, err := sqlTx.ExecContext(ctx, "DELETE FROM post_versions WHERE id = $1", id)
 	if err != nil {
 		logger.Log.Error("Failed to delete post version", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		logger.Log.Error("Failed to get rows affected", zap.Error(err))
-		return err
+		return common.ErrInternalServerError
 	}
 	if rowsAffected == 0 {
 		logger.Log.Error("Post version not found or already deleted", zap.String("id", id))
-		return errors.New("post version not found or already deleted")
+		return common.NewCustomError(http.StatusInternalServerError, "post version not found or already deleted")
 	}
 	return nil
 }
@@ -104,10 +106,10 @@ func (r *postVersionRepository) GetByIDForUpdate(ctx context.Context, tx domain.
 	if err != nil {
 		if err == sql.ErrNoRows {
 			logger.Log.Error("No post versions found for id", zap.String("id", id))
-			return nil, errors.New("post version not found")
+			return nil, common.ErrPostNotFound
 		}
 		logger.Log.Error("Failed to get post version by id for update", zap.Error(err))
-		return nil, err
+		return nil, common.ErrInternalServerError
 	}
 	return postVersion, nil
 }
