@@ -47,10 +47,6 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	if post == nil {
-		handleError(c, common.ErrPostNotFound)
-		return
-	}
 	response := domain.PostWithVersion{
 		Post:          post.Post,
 		Title:         post.Title,
@@ -162,6 +158,8 @@ func handleError(c *gin.Context, err error) {
 			c.JSON(http.StatusNotFound, gin.H{"error": customErr.Message})
 		case http.StatusForbidden:
 			c.JSON(http.StatusForbidden, gin.H{"error": customErr.Message})
+		case http.StatusConflict:
+			c.JSON(http.StatusConflict, gin.H{"error": customErr.Message})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		}

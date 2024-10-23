@@ -33,7 +33,14 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 }
 
 func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
-	return u.postRepo.GetByID(ctx, id)
+	post, err := u.postRepo.GetByID(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+	if post == nil {
+		return nil, common.ErrPostNotFound
+	}
+	return post, nil
 }
 
 func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO) (*domain.PostResponseDTO, error) {
@@ -233,7 +240,7 @@ func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) 
 	}
 	if postVersion.PublishedAt != nil {
 		logger.Log.Error("Post version is published", zap.String("postID", id))
-		return common.NewCustomError(http.StatusForbidden, "post version is published")
+		return common.NewCustomError(http.StatusConflict, "post version is published")
 	}
 	err = u.postVersionRepo.Delete(ctx, tx, postVersion.ID)
 	if err != nil {
