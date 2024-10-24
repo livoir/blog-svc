@@ -64,14 +64,14 @@ jobs:
 
     # Run gosec for dependency security
     - name: Run gosec
-      uses: securego/gosec@2.18.2
+      uses: securego/gosec@master
       with:
         args: ./...
 
     # Run nancy for dependency security
     - name: Run nancy
       run: |
-        go install github.com/sonatype-nexus-community/nancy@1.0.42
+        go install github.com/sonatype-nexus-community/nancy@master
         go list -json -deps ./... | nancy sleuth
 
     # Build the Go application
