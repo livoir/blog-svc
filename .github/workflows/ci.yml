@@ -71,7 +71,7 @@ jobs:
     # Run nancy for dependency security
     - name: Run nancy
       run: |
-        go install github.com/sonatype-nexus-community/nancy@master
+        go install github.com/sonatype-nexus-community/nancy@latest
         go list -json -deps ./... | nancy sleuth
 
     # Build the Go application
