@@ -37,5 +37,5 @@ go.work.sum
 # Config file
 configs/config.yaml
 
-# Coverage directory
+# Coverage
 coverage

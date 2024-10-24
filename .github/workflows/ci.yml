@@ -52,10 +52,6 @@ jobs:
         version: latest
         args: --timeout=5m
 
-    # Run linter
-    - name: Run linter
-      run: golangci-lint run ./...
-
     # Run tests
     - name: Run Tests
       run: go test ./... -v -race -coverprofile=coverage.txt -covermode=atomic
@@ -68,14 +64,14 @@ jobs:
 
     # Run gosec for dependency security
     - name: Run gosec
-      uses: securego/gosec@master
+      uses: securego/gosec@2.18.2
       with:
         args: ./...
 
     # Run nancy for dependency security
     - name: Run nancy
       run: |
-        go install github.com/sonatype-nexus-community/nancy@latest
+        go install github.com/sonatype-nexus-community/nancy@1.0.42
         go list -json -deps ./... | nancy sleuth
 
     # Build the Go application
