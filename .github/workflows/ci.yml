@@ -16,7 +16,7 @@ jobs:
     timeout-minutes: 10
     strategy:
       matrix:
-        go-version: ['1.22']
+        go-version: ['1.21']
       fail-fast: false
 
     steps:
@@ -28,7 +28,7 @@ jobs:
     - name: Set up Go
       uses: actions/setup-go@v4
       with:
-        go-version: '1.22'
+        go-version: '1.21'
 
     # Cache Go modules
     - name: Cache Go modules
@@ -44,6 +44,17 @@ jobs:
     # Install dependencies
     - name: Install Dependencies
       run: go mod download
+
+    # Run linter
+    - name: Install golangci-lint
+      uses: golangci/golangci-lint-action@v5
+      with:
+        version: latest
+        args: --timeout=5m
+
+    # Run linter
+    - name: Run linter
+      run: golangci-lint run ./...
 
     # Run tests
     - name: Run Tests

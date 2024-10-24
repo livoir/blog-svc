@@ -60,13 +60,17 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
 			}
 		}
 	}(tx)
@@ -112,13 +116,17 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
 			}
 		}
 	}(tx)
@@ -183,13 +191,17 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
 			}
 		}
 	}(tx)
@@ -244,13 +256,17 @@ func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) 
 		if p := recover(); p != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
 			}
 			panic(p)
 		} else if err != nil {
 			e := tx.Rollback()
 			if e != nil {
-				logger.Log.Error("Failed to rollback transaction", zap.Error(e))
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
 			}
 		}
 	}(tx)
