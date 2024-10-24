@@ -58,10 +58,20 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 	}
 	defer func(tx domain.Transaction) {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
+			}
 		}
 	}(tx)
 	err = u.postRepo.Create(ctx, tx, post)
@@ -104,10 +114,20 @@ func (u *postUsecase) Update(ctx context.Context, id string, request *domain.Upd
 	}
 	defer func(tx domain.Transaction) {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
+			}
 		}
 	}(tx)
 	// Check if the post exists
@@ -169,10 +189,20 @@ func (u *postUsecase) Publish(ctx context.Context, id string) (*domain.PublishRe
 	}
 	defer func(tx domain.Transaction) {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
+			}
 		}
 	}(tx)
 	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)
@@ -224,10 +254,20 @@ func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) 
 	}
 	defer func(tx domain.Transaction) {
 		if p := recover(); p != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "panic_recovery"))
+			}
 			panic(p)
 		} else if err != nil {
-			tx.Rollback()
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction",
+					zap.Error(e),
+					zap.String("error_source", "error_handling"))
+			}
 		}
 	}(tx)
 	postVersion, err := u.postVersionRepo.GetLatestByPostIDForUpdate(ctx, tx, id)

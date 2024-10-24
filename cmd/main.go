@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
@@ -15,7 +16,11 @@ func main() {
 	if err := logger.Init(); err != nil {
 		return
 	}
-	defer logger.Sync()
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			fmt.Println("Failed to sync logger", err)
+		}
+	}()
 	// Initialize Viper
 	if err := initConfig(); err != nil {
 		logger.Log.Error("Failed to load config", zap.Error(err))
