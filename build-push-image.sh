@@ -10,7 +10,13 @@ fi
 
 # Validate Docker installation
 if ! command -v docker > /dev/null 2>&1; then
-    echo "Error: Docker is not installed or not running or not in PATH"
+    echo "Error: Docker is not installed or not in PATH"
+    exit 1
+fi
+
+# Validate docker daemon is running
+if ! docker info > /dev/null 2>&1; then
+    echo "Error: Docker daemon is not running"
     exit 1
 fi
 
@@ -20,11 +26,6 @@ IMAGE_TAG="${IMAGE_TAG:-dev}"
 REGISTRY="ghcr.io/livoir"
 FULL_IMAGE_NAME="${REGISTRY}/${IMAGE_NAME}:${IMAGE_TAG}"
 
-# Validate image name format
-if ! echo "${FULL_IMAGE_NAME}" | grep -qE '^[a-zA-Z0-9][a-zA-Z0-9_.-/]*:[a-zA-Z0-9_.-]*$'; then
-    echo "Error: Invalid image name format: ${FULL_IMAGE_NAME}"
-    exit 1
-fi
 
 # Build the Docker image
 echo "Building Docker image ${FULL_IMAGE_NAME}"
@@ -35,7 +36,7 @@ fi
 
 # Login to the GitHub Container Registry
 echo "Logging in to the GitHub Container Registry"
-if ! timeout 60s sh -c "echo ${GITHUB_ACCESS_TOKEN} | docker login ghcr.io -u ${GITHUB_USER} --password-stdin"; then
+if ! timeout 60s sh -c 'docker login ghcr.io -u "${GITHUB_USER}" --password-stdin < /dev/fd/3' 3<<< "${GITHUB_ACCESS_TOKEN}"; then
     echo "Error: Failed to authenticate with GHCR"
     exit 1
 fi
@@ -50,13 +51,17 @@ until docker push "${FULL_IMAGE_NAME}"; do
     fi
     echo "Failed to push Docker image ${FULL_IMAGE_NAME}, attempt $attempt of $max_attempts. Retrying..."
     attempt=$((attempt + 1))
-    sleep $((2 ** (attempt-1))) # Exponential backoff: 1s, 2s, 4s
+    case $attempt in
+        1) sleep 1 ;;
+        2) sleep 2 ;;
+        3) sleep 4 ;;
+    esac
 done
 echo "Successfully pushed image to ${FULL_IMAGE_NAME}"
 
 # Verify the pushed image
 echo "Verifying the pushed image"
-if ! docker pull "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
+if ! timeout 60s docker pull "${FULL_IMAGE_NAME}" > /dev/null 2>&1; then
     echo "Error: Failed to verify the pushed image ${FULL_IMAGE_NAME}. Pull test failed"
     exit 1
 fi
