@@ -19,4 +19,6 @@ CREATE TABLE IF NOT EXISTS post_version_categories (
 
 -- +goose Down
 -- +goose StatementBegin
+DROP TABLE IF EXISTS post_version_categories;
+DROP TABLE IF EXISTS categories;
 -- +goose StatementEnd
