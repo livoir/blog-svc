@@ -33,6 +33,16 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 		logger.Log.Error("Failed to initialize post usecase", zap.Error(err))
 		return nil, err
 	}
+	categoryRepo, err := repository.NewCategoryRepository(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize category repository", zap.Error(err))
+		return nil, err
+	}
+	categoryUsecase, err := usecase.NewCategoryUsecase(transactor, categoryRepo)
+	if err != nil {
+		logger.Log.Error("Failed to initialize category usecase", zap.Error(err))
+		return nil, err
+	}
 
 	r := gin.New()
 	r.Use(gin.Logger())
@@ -40,6 +50,10 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 	postsApi := r.Group("/posts")
 	{
 		http.NewPostHandler(postsApi, postUsecase)
+	}
+	categoriesApi := r.Group("/categories")
+	{
+		http.NewCategoryHandler(categoriesApi, categoryUsecase)
 	}
 
 	return r, nil

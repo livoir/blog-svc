@@ -279,7 +279,6 @@ func (u *postUsecase) DeletePostVersionByPostID(ctx context.Context, id string) 
 		return common.ErrPostVersionNotFound
 	}
 	if postVersion.PublishedAt != nil {
-		logger.Log.Error("Post version is published", zap.String("postID", id))
 		return common.NewCustomError(http.StatusConflict, "post version is published")
 	}
 	err = u.postVersionRepo.Delete(ctx, tx, postVersion.ID)

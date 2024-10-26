@@ -160,6 +160,8 @@ func handleError(c *gin.Context, err error) {
 			c.JSON(http.StatusForbidden, gin.H{"error": customErr.Message})
 		case http.StatusConflict:
 			c.JSON(http.StatusConflict, gin.H{"error": customErr.Message})
+		case http.StatusBadRequest:
+			c.JSON(http.StatusBadRequest, gin.H{"error": customErr.Message})
 		default:
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		}
