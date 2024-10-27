@@ -18,19 +18,24 @@ type PostVersionCategory struct {
 	CreatedAt     time.Time `json:"created_at"`
 }
 
-type CreateCategoryDTO struct {
+type CategoryRequestDTO struct {
 	Name string `json:"name"`
 }
 
 type CategoryResponseDTO struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+	ID        string    `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
 }
 
 type CategoryRepository interface {
 	Create(ctx context.Context, tx Transaction, category *Category) error
+	Update(ctx context.Context, tx Transaction, category *Category) error
+	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Category, error)
 }
 
 type CategoryUsecase interface {
-	Create(ctx context.Context, request *CreateCategoryDTO) (*CategoryResponseDTO, error)
+	Create(ctx context.Context, request *CategoryRequestDTO) (*CategoryResponseDTO, error)
+	Update(ctx context.Context, id string, request *CategoryRequestDTO) (*CategoryResponseDTO, error)
 }

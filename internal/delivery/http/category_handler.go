@@ -19,15 +19,16 @@ func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 		CategoryUsecase: usecase,
 	}
 	r.POST("", handler.CreateCategory)
+	r.PUT("/:id", handler.UpdateCategory)
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
-	var request domain.CreateCategoryDTO
+	var request domain.CategoryRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	if err := h.validateCreateCategoryDTO(&request); err != nil {
+	if err := h.validateCategoryRequestDTO(&request); err != nil {
 		handleError(c, err)
 		return
 	}
@@ -39,7 +40,30 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	c.JSON(http.StatusCreated, response)
 }
 
-func (h *CategoryHandler) validateCreateCategoryDTO(request *domain.CreateCategoryDTO) error {
+func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	var request domain.CategoryRequestDTO
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	id, ok := h.validateAndGetCategoryID(c)
+	if !ok {
+		handleError(c, common.NewCustomError(http.StatusBadRequest, "invalid category id"))
+		return
+	}
+	if err := h.validateCategoryRequestDTO(&request); err != nil {
+		handleError(c, err)
+		return
+	}
+	response, err := h.CategoryUsecase.Update(c.Request.Context(), id, &request)
+	if err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, response)
+}
+
+func (h *CategoryHandler) validateCategoryRequestDTO(request *domain.CategoryRequestDTO) error {
 	missingFields := []string{}
 	if request.Name == "" {
 		missingFields = append(missingFields, "name")
@@ -48,4 +72,12 @@ func (h *CategoryHandler) validateCreateCategoryDTO(request *domain.CreateCatego
 		return common.NewCustomError(http.StatusBadRequest, fmt.Sprintf("%s required", strings.Join(missingFields, " and ")))
 	}
 	return nil
+}
+
+func (h *CategoryHandler) validateAndGetCategoryID(c *gin.Context) (string, bool) {
+	id := c.Param("id")
+	if id == "" || !isValidID(id) {
+		return "", false
+	}
+	return id, true
 }
