@@ -33,6 +33,7 @@ type CategoryRepository interface {
 	Create(ctx context.Context, tx Transaction, category *Category) error
 	Update(ctx context.Context, tx Transaction, category *Category) error
 	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Category, error)
+	GetByName(ctx context.Context, name string) (*Category, error)
 }
 
 type CategoryUsecase interface {

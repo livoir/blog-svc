@@ -65,7 +65,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 
 func (h *CategoryHandler) validateCategoryRequestDTO(request *domain.CategoryRequestDTO) error {
 	missingFields := []string{}
-	if request.Name == "" {
+	if strings.TrimSpace(request.Name) == "" {
 		missingFields = append(missingFields, "name")
 	}
 	if len(missingFields) > 0 {

@@ -46,6 +46,13 @@ func (u *CategoryUsecase) Create(ctx context.Context, request *domain.CategoryRe
 			}
 		}
 	}(tx)
+	existingCategory, err := u.categoryRepo.GetByName(ctx, request.Name)
+	if err != nil && !errors.Is(err, common.ErrCategoryNotFound) {
+		return nil, err
+	}
+	if existingCategory != nil {
+		return nil, common.ErrCategoryNameDuplicate
+	}
 	now := time.Now()
 	category := &domain.Category{
 		Name:      request.Name,
@@ -114,7 +121,7 @@ func (u *CategoryUsecase) Update(ctx context.Context, id string, request *domain
 	return &domain.CategoryResponseDTO{
 		ID:        category.ID,
 		Name:      category.Name,
-		CreatedAt: category.CreatedAt,
+		CreatedAt: existingCategory.CreatedAt,
 		UpdatedAt: category.UpdatedAt,
 	}, nil
 }

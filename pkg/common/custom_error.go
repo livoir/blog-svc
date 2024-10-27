@@ -1,10 +1,16 @@
 package common
 
-import "net/http"
+import (
+	"net/http"
+)
 
-var ErrInternalServerError = NewCustomError(http.StatusInternalServerError, "An internal server error occurred")
-var ErrPostNotFound = NewCustomError(http.StatusNotFound, "The requested post was not found")
-var ErrPostVersionNotFound = NewCustomError(http.StatusNotFound, "The requested post version was not found")
+var (
+	ErrInternalServerError   = NewCustomError(http.StatusInternalServerError, "An internal server error occurred")
+	ErrPostNotFound          = NewCustomError(http.StatusNotFound, "The requested post was not found")
+	ErrPostVersionNotFound   = NewCustomError(http.StatusNotFound, "The requested post version was not found")
+	ErrCategoryNotFound      = NewCustomError(http.StatusNotFound, "category not found")
+	ErrCategoryNameDuplicate = NewCustomError(http.StatusBadRequest, "category name already exists")
+)
 
 type CustomError struct {
 	StatusCode int

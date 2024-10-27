@@ -23,6 +23,21 @@ func NewCategoryRepository(db *sql.DB) (domain.CategoryRepository, error) {
 	return &CategoryRepository{db: db}, nil
 }
 
+func (r *CategoryRepository) GetByName(ctx context.Context, name string) (*domain.Category, error) {
+	query := `SELECT id, name, created_at, updated_at FROM categories WHERE name = $1`
+	row := r.db.QueryRowContext(ctx, query, name)
+	var category domain.Category
+	err := row.Scan(&category.ID, &category.Name, &category.CreatedAt, &category.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.ErrCategoryNotFound
+		}
+		logger.Log.Error("Failed to get category by id", zap.Error(err))
+		return nil, common.ErrInternalServerError
+	}
+	return &category, nil
+}
+
 func (r *CategoryRepository) Create(ctx context.Context, tx domain.Transaction, category *domain.Category) error {
 	sqlTx := tx.GetTx()
 	category.ID = ulid.New()
@@ -70,7 +85,7 @@ func (r *CategoryRepository) GetByIDForUpdate(ctx context.Context, tx domain.Tra
 	err := row.Scan(&category.ID, &category.Name, &category.CreatedAt, &category.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, common.NewCustomError(http.StatusNotFound, "category not found")
+			return nil, common.ErrCategoryNotFound
 		}
 		logger.Log.Error("Failed to get category by id", zap.Error(err))
 		return nil, common.ErrInternalServerError

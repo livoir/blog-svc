@@ -39,12 +39,24 @@ func (suite *E2ETestSuite) TestCreateCategory() {
 				"error": "name required",
 			},
 		},
+		{
+			name: "Invalid category creation - name already exists",
+			requestBody: domain.CategoryRequestDTO{
+				Name: "Test Category",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": "category name already exists",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tc.requestBody)
-			req, _ := http.NewRequest("POST", "/categories", bytes.NewBuffer(jsonBody))
+			jsonBody, err := json.Marshal(tc.requestBody)
+			assert.NoError(t, err)
+			req, err := http.NewRequest("POST", "/categories", bytes.NewBuffer(jsonBody))
+			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
@@ -53,24 +65,21 @@ func (suite *E2ETestSuite) TestCreateCategory() {
 			assert.Equal(t, tc.expectedStatus, w.Code)
 
 			var response map[string]interface{}
-			err := json.Unmarshal(w.Body.Bytes(), &response)
+			err = json.Unmarshal(w.Body.Bytes(), &response)
 			assert.NoError(t, err)
 
-			var createdAt, updatedAt time.Time
 			for key, expectedValue := range tc.expectedBody {
 				assert.Equal(t, expectedValue, response[key], "Mismatch for key %s", key)
-				if key == "created_at" {
-					createdAt, err = time.Parse(time.RFC3339, response[key].(string))
-					assert.NoError(t, err)
-				}
-				if key == "updated_at" {
-					updatedAt, err = time.Parse(time.RFC3339, response[key].(string))
-					assert.NoError(t, err)
-				}
 			}
-			assert.NotNil(t, createdAt)
-			assert.NotNil(t, updatedAt)
-			assert.Equal(t, createdAt, updatedAt)
+			if tc.expectedStatus == http.StatusCreated {
+				assert.NotEmpty(t, response["created_at"])
+				assert.NotEmpty(t, response["updated_at"])
+				createdAt, err := time.Parse(time.RFC3339, response["created_at"].(string))
+				assert.NoError(t, err)
+				updatedAt, err := time.Parse(time.RFC3339, response["updated_at"].(string))
+				assert.NoError(t, err)
+				assert.Equal(t, createdAt, updatedAt)
+			}
 		})
 	}
 }
@@ -78,15 +87,22 @@ func (suite *E2ETestSuite) TestCreateCategory() {
 func (suite *E2ETestSuite) TestUpdateCategory() {
 	// Create a category first
 	createBody := domain.CategoryRequestDTO{Name: "Original Category"}
-	jsonCreateBody, _ := json.Marshal(createBody)
-	createReq, _ := http.NewRequest("POST", "/categories", bytes.NewBuffer(jsonCreateBody))
+	jsonCreateBody, err := json.Marshal(createBody)
+	assert.NoError(suite.T(), err)
+	createReq, err := http.NewRequest("POST", "/categories", bytes.NewBuffer(jsonCreateBody))
+	assert.NoError(suite.T(), err)
 	createReq.Header.Set("Content-Type", "application/json")
 	w := httptest.NewRecorder()
 	suite.router.ServeHTTP(w, createReq)
 
 	var createResponse map[string]interface{}
-	json.Unmarshal(w.Body.Bytes(), &createResponse)
-	categoryID := createResponse["id"].(string)
+	err = json.Unmarshal(w.Body.Bytes(), &createResponse)
+	assert.NoError(suite.T(), err)
+
+	idValue, ok := createResponse["id"]
+	assert.True(suite.T(), ok, "Response should contain 'id'")
+	categoryID, ok := idValue.(string)
+	assert.True(suite.T(), ok, "'id' should be a string")
 
 	testCases := []struct {
 		name           string
