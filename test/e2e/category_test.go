@@ -156,17 +156,6 @@ func (suite *E2ETestSuite) TestUpdateCategory() {
 			},
 		},
 		{
-			name:       "Invalid category update - duplicate name with other category",
-			categoryID: categoryID,
-			requestBody: domain.CategoryRequestDTO{
-				Name: "Another Category",
-			},
-			expectedStatus: http.StatusBadRequest,
-			expectedBody: map[string]interface{}{
-				"error": "category name already exists",
-			},
-		},
-		{
 			name:       "Invalid category update - name is the same as before",
 			categoryID: categoryID,
 			requestBody: domain.CategoryRequestDTO{
@@ -177,12 +166,25 @@ func (suite *E2ETestSuite) TestUpdateCategory() {
 				"error": "name is the same as before",
 			},
 		},
+		{
+			name:       "Invalid category update - duplicate name with other category",
+			categoryID: categoryID,
+			requestBody: domain.CategoryRequestDTO{
+				Name: "Another Category",
+			},
+			expectedStatus: http.StatusBadRequest,
+			expectedBody: map[string]interface{}{
+				"error": "category name already exists",
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		suite.T().Run(tc.name, func(t *testing.T) {
-			jsonBody, _ := json.Marshal(tc.requestBody)
-			req, _ := http.NewRequest(http.MethodPut, "/categories/"+tc.categoryID, bytes.NewBuffer(jsonBody))
+			jsonBody, err := json.Marshal(tc.requestBody)
+			assert.NoError(t, err)
+			req, err := http.NewRequest(http.MethodPut, "/categories/"+tc.categoryID, bytes.NewBuffer(jsonBody))
+			assert.NoError(t, err)
 			req.Header.Set("Content-Type", "application/json")
 
 			w := httptest.NewRecorder()
@@ -191,7 +193,7 @@ func (suite *E2ETestSuite) TestUpdateCategory() {
 			assert.Equal(t, tc.expectedStatus, w.Code)
 
 			var response map[string]interface{}
-			err := json.Unmarshal(w.Body.Bytes(), &response)
+			err = json.Unmarshal(w.Body.Bytes(), &response)
 			assert.NoError(t, err)
 
 			for key, expectedValue := range tc.expectedBody {

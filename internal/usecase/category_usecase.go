@@ -51,7 +51,8 @@ func (u *CategoryUsecase) Create(ctx context.Context, request *domain.CategoryRe
 		return nil, err
 	}
 	if existingCategory != nil {
-		return nil, common.ErrCategoryNameDuplicate
+		err = common.ErrCategoryNameDuplicate
+		return nil, err
 	}
 	now := time.Now()
 	category := &domain.Category{
@@ -87,10 +88,11 @@ func (u *CategoryUsecase) Update(ctx context.Context, id string, request *domain
 				logger.Log.Error("Failed to rollback transaction", zap.Error(e), zap.String("error_source", "panic_recovery"))
 			}
 			panic(p)
-		}
-		e := tx.Rollback()
-		if e != nil {
-			logger.Log.Error("Failed to rollback transaction", zap.Error(e), zap.String("error_source", "error_propagation"))
+		} else if err != nil {
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction", zap.Error(e), zap.String("error_source", "error_propagation"))
+			}
 		}
 	}(tx)
 	existingCategory, err := u.categoryRepo.GetByIDForUpdate(ctx, tx, id)
@@ -98,17 +100,20 @@ func (u *CategoryUsecase) Update(ctx context.Context, id string, request *domain
 		return nil, err
 	}
 	if existingCategory == nil {
-		return nil, common.NewCustomError(http.StatusNotFound, "category not found")
+		err = common.ErrCategoryNotFound
+		return nil, err
 	}
 	if existingCategory.Name == request.Name {
-		return nil, common.NewCustomError(http.StatusBadRequest, "name is the same as before")
+		err = common.NewCustomError(http.StatusBadRequest, "name is the same as before")
+		return nil, err
 	}
 	otherCategory, err := u.categoryRepo.GetByName(ctx, request.Name)
 	if err != nil && !errors.Is(err, common.ErrCategoryNotFound) {
 		return nil, err
 	}
 	if otherCategory != nil {
-		return nil, common.ErrCategoryNameDuplicate
+		err = common.ErrCategoryNameDuplicate
+		return nil, err
 	}
 	now := time.Now()
 	category := &domain.Category{
