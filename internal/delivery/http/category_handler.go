@@ -26,7 +26,7 @@ func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 	var request domain.CategoryRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
 		return
 	}
 	if err := h.validateCategoryRequestDTO(&request); err != nil {
@@ -44,7 +44,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	var request domain.CategoryRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
 		return
 	}
 	id, ok := h.validateAndGetCategoryID(c)
@@ -67,7 +67,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 func (h *CategoryHandler) AttachCategoryToPostVersion(c *gin.Context) {
 	var request domain.AttachCategoryToPostVersionRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
 		return
 	}
 	if err := h.validateAttachCategoryToPostVersionRequestDTO(&request); err != nil {

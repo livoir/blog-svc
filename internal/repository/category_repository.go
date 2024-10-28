@@ -106,7 +106,7 @@ func (r *CategoryRepository) AttachToPostVersion(ctx context.Context, tx domain.
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d, $%d)", i*2+1, i*2+2))
 		valueArgs = append(valueArgs, postVersionCategory.PostVersionID, postVersionCategory.CategoryID)
 	}
-	query := fmt.Sprintf(`INSERT INTO post_version_categories (post_version_id, category_id) VALUES %s ON CONFLICT DO NOTHING`, strings.Join(valueStrings, ","))
+	query := fmt.Sprintf(`INSERT INTO post_version_categories (post_version_id, category_id) VALUES %s ON CONFLICT DO NOTHING`, strings.Join(valueStrings, ",")) //#nosec G201
 	result, err := sqlTx.ExecContext(ctx, query, valueArgs...)
 	if err != nil {
 		logger.Log.Error("Failed to attach categories to post version", zap.Error(err))
@@ -130,9 +130,8 @@ func (r *CategoryRepository) GetByIDs(ctx context.Context, ids []string) ([]*dom
 		valueStrings = append(valueStrings, fmt.Sprintf("($%d)", i+1))
 		valueArgs = append(valueArgs, id)
 	}
-	query := fmt.Sprintf(`SELECT id, name, created_at, updated_at FROM categories WHERE id IN (%s)`, strings.Join(valueStrings, ","))
+	query := fmt.Sprintf(`SELECT id, name, created_at, updated_at FROM categories WHERE id IN (%s)`, strings.Join(valueStrings, ",")) //#nosec G201
 	rows, err := r.db.QueryContext(ctx, query, valueArgs...)
-	fmt.Println(err)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, common.ErrCategoryNotFound
@@ -151,6 +150,5 @@ func (r *CategoryRepository) GetByIDs(ctx context.Context, ids []string) ([]*dom
 		}
 		categories = append(categories, &category)
 	}
-	fmt.Println(categories)
 	return categories, nil
 }
