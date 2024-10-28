@@ -29,14 +29,22 @@ type CategoryResponseDTO struct {
 	UpdatedAt time.Time `json:"updated_at"`
 }
 
+type AttachCategoryToPostVersionRequestDTO struct {
+	PostVersionID string   `json:"post_version_id"`
+	CategoryIDs   []string `json:"category_ids"`
+}
+
 type CategoryRepository interface {
 	Create(ctx context.Context, tx Transaction, category *Category) error
 	Update(ctx context.Context, tx Transaction, category *Category) error
 	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Category, error)
 	GetByName(ctx context.Context, name string) (*Category, error)
+	AttachToPostVersion(ctx context.Context, tx Transaction, postVersionCategories []PostVersionCategory) error
+	GetByID(ctx context.Context, id string) (*Category, error)
 }
 
 type CategoryUsecase interface {
 	Create(ctx context.Context, request *CategoryRequestDTO) (*CategoryResponseDTO, error)
 	Update(ctx context.Context, id string, request *CategoryRequestDTO) (*CategoryResponseDTO, error)
+	AttachToPostVersion(ctx context.Context, request *AttachCategoryToPostVersionRequestDTO) error
 }

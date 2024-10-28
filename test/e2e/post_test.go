@@ -129,7 +129,7 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	suite.router.ServeHTTP(w, req)
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
-	var retrievedPost domain.PostWithVersion
+	var retrievedPost domain.PostDetailDTO
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
@@ -139,6 +139,7 @@ func (suite *E2ETestSuite) TestCreateAndGetPost() {
 	assert.NotEmpty(suite.T(), retrievedPost.UpdatedAt)
 	assert.Empty(suite.T(), retrievedPost.CurrentVersionID)
 	assert.Equal(suite.T(), retrievedPost.CurrentVersionID, retrievedPost.Post.CurrentVersionID)
+	assert.Empty(suite.T(), retrievedPost.Categories)
 }
 
 func (suite *E2ETestSuite) TestGetNonExistentPost() {
@@ -210,7 +211,7 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	var retrievedPost domain.PostWithVersion
+	var retrievedPost domain.PostDetailDTO
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
@@ -218,6 +219,7 @@ func (suite *E2ETestSuite) TestUpdatePost() {
 	assert.Equal(suite.T(), "This is an updated test post content with <b>some bold text</b>", retrievedPost.Content)
 	assert.Equal(suite.T(), int64(1), retrievedPost.VersionNumber)
 	assert.Equal(suite.T(), retrievedPost.CreatedAt, retrievedPost.UpdatedAt)
+	assert.Empty(suite.T(), retrievedPost.Categories)
 }
 
 func (suite *E2ETestSuite) TestPublishPost() {
@@ -279,7 +281,7 @@ func (suite *E2ETestSuite) TestPublishPost() {
 
 	assert.Equal(suite.T(), http.StatusOK, w.Code)
 
-	var retrievedPost domain.PostWithVersion
+	var retrievedPost domain.PostDetailDTO
 	err = json.Unmarshal(w.Body.Bytes(), &retrievedPost)
 	assert.NoError(suite.T(), err)
 	assert.Equal(suite.T(), createdPost.PostID, retrievedPost.Post.ID)
@@ -287,6 +289,7 @@ func (suite *E2ETestSuite) TestPublishPost() {
 	assert.Equal(suite.T(), "This is an updated test post content for publishing", retrievedPost.Content)
 	assert.Equal(suite.T(), int64(2), retrievedPost.VersionNumber)
 	assert.NotEmpty(suite.T(), retrievedPost.CurrentVersionID)
+	assert.Empty(suite.T(), retrievedPost.Categories)
 
 	// Publish the post again
 	req, err = http.NewRequest(http.MethodPost, fmt.Sprintf("/posts/%s/publish", createdPost.PostID), nil)

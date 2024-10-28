@@ -92,3 +92,35 @@ func (r *CategoryRepository) GetByIDForUpdate(ctx context.Context, tx domain.Tra
 	}
 	return &category, nil
 }
+
+func (r *CategoryRepository) AttachToPostVersion(ctx context.Context, tx domain.Transaction, postVersionCategories []domain.PostVersionCategory) error {
+	sqlTx := tx.GetTx()
+	query := `INSERT INTO post_version_categories (post_version_id, category_id) VALUES ($1, $2)`
+	for _, postVersionCategory := range postVersionCategories {
+		result, err := sqlTx.ExecContext(ctx, query, postVersionCategory.PostVersionID, postVersionCategory.CategoryID)
+		if err != nil {
+			logger.Log.Error("Failed to attach category to post version", zap.Error(err))
+			return common.ErrInternalServerError
+		}
+		rowsAffected, err := result.RowsAffected()
+		if err != nil {
+			logger.Log.Error("Failed to get rows affected", zap.Error(err))
+			return common.ErrInternalServerError
+		}
+		if rowsAffected == 0 {
+			return common.NewCustomError(http.StatusInternalServerError, "failed to attach category to post version")
+		}
+	}
+	return nil
+}
+
+func (r *CategoryRepository) GetByID(ctx context.Context, id string) (*domain.Category, error) {
+	query := `SELECT id, name, created_at, updated_at FROM categories WHERE id = $1`
+	row := r.db.QueryRowContext(ctx, query, id)
+	var category domain.Category
+	err := row.Scan(&category.ID, &category.Name, &category.CreatedAt, &category.UpdatedAt)
+	if err != nil {
+		return nil, common.ErrCategoryNotFound
+	}
+	return &category, nil
+}

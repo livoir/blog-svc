@@ -20,6 +20,7 @@ func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 	}
 	r.POST("", handler.CreateCategory)
 	r.PUT("/:id", handler.UpdateCategory)
+	r.POST("/attach", handler.AttachCategoryToPostVersion)
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
@@ -63,6 +64,23 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 	c.JSON(http.StatusOK, response)
 }
 
+func (h *CategoryHandler) AttachCategoryToPostVersion(c *gin.Context) {
+	var request domain.AttachCategoryToPostVersionRequestDTO
+	if err := c.ShouldBindJSON(&request); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+	if err := h.validateAttachCategoryToPostVersionRequestDTO(&request); err != nil {
+		handleError(c, err)
+		return
+	}
+	if err := h.CategoryUsecase.AttachToPostVersion(c.Request.Context(), &request); err != nil {
+		handleError(c, err)
+		return
+	}
+	c.JSON(http.StatusOK, gin.H{"message": "category attached to post version successfully"})
+}
+
 func (h *CategoryHandler) validateCategoryRequestDTO(request *domain.CategoryRequestDTO) error {
 	missingFields := []string{}
 	if strings.TrimSpace(request.Name) == "" {
@@ -80,4 +98,24 @@ func (h *CategoryHandler) validateAndGetCategoryID(c *gin.Context) (string, bool
 		return "", false
 	}
 	return id, true
+}
+
+func (h *CategoryHandler) validateAttachCategoryToPostVersionRequestDTO(request *domain.AttachCategoryToPostVersionRequestDTO) error {
+	missingFields := []string{}
+	if request.PostVersionID == "" || !isValidID(request.PostVersionID) {
+		missingFields = append(missingFields, "post version id")
+	}
+	if len(request.CategoryIDs) == 0 {
+		missingFields = append(missingFields, "category ids")
+	}
+	for _, categoryID := range request.CategoryIDs {
+		if !isValidID(categoryID) {
+			missingFields = append(missingFields, "category id")
+			break
+		}
+	}
+	if len(missingFields) > 0 {
+		return common.NewCustomError(http.StatusBadRequest, fmt.Sprintf("%s required", strings.Join(missingFields, " and ")))
+	}
+	return nil
 }

@@ -3,6 +3,7 @@ package e2e
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"livoir-blog/internal/domain"
 	"net/http"
 	"net/http/httptest"
@@ -211,4 +212,129 @@ func (suite *E2ETestSuite) TestUpdateCategory() {
 			}
 		})
 	}
+}
+
+func (suite *E2ETestSuite) TestAttachCategoryToPostVersion() {
+	t := suite.T()
+
+	// Create a post first
+	newPost := domain.CreatePostDTO{
+		Title:   "Test Post for Category Attachment",
+		Content: "This is a test post content",
+	}
+	jsonValue, err := json.Marshal(newPost)
+	assert.NoError(t, err)
+	req, err := http.NewRequest(http.MethodPost, "/posts", bytes.NewBuffer(jsonValue))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var createdPost domain.PostResponseDTO
+	err = json.Unmarshal(w.Body.Bytes(), &createdPost)
+	assert.NoError(t, err)
+
+	// Create a category
+	category := domain.CategoryRequestDTO{
+		Name: "Test Category for Attachment",
+	}
+	jsonValue, err = json.Marshal(category)
+	assert.NoError(t, err)
+	req, err = http.NewRequest(http.MethodPost, "/categories", bytes.NewBuffer(jsonValue))
+	assert.NoError(t, err)
+	req.Header.Set("Content-Type", "application/json")
+	w = httptest.NewRecorder()
+	suite.router.ServeHTTP(w, req)
+
+	assert.Equal(t, http.StatusCreated, w.Code)
+	var createdCategory map[string]interface{}
+	err = json.Unmarshal(w.Body.Bytes(), &createdCategory)
+	assert.NoError(t, err)
+	categoryID := createdCategory["id"].(string)
+
+	testCases := []struct {
+		name           string
+		requestBody    domain.AttachCategoryToPostVersionRequestDTO
+		expectedStatus int
+		expectedBody   map[string]interface{}
+	}{
+		{
+			name: "Valid category attachment",
+			requestBody: domain.AttachCategoryToPostVersionRequestDTO{
+				CategoryIDs:   []string{categoryID},
+				PostVersionID: createdPost.PostVersionID,
+			},
+			expectedStatus: http.StatusOK,
+			expectedBody: map[string]interface{}{
+				"message": "category attached to post version successfully",
+			},
+		},
+		{
+			name: "Invalid attachment - non-existent category",
+			requestBody: domain.AttachCategoryToPostVersionRequestDTO{
+				CategoryIDs:   []string{"01JB9RGJ59B46BA25711PKMYAS"},
+				PostVersionID: createdPost.PostVersionID,
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedBody: map[string]interface{}{
+				"error": "category not found",
+			},
+		},
+		{
+			name: "Invalid attachment - non-existent post version",
+			requestBody: domain.AttachCategoryToPostVersionRequestDTO{
+				CategoryIDs:   []string{categoryID},
+				PostVersionID: "01JB9RGJ59B46BA25711PKMYAS",
+			},
+			expectedStatus: http.StatusNotFound,
+			expectedBody: map[string]interface{}{
+				"error": "The requested post version was not found",
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			jsonBody, err := json.Marshal(tc.requestBody)
+			assert.NoError(t, err)
+			req, err := http.NewRequest(http.MethodPost, "/categories/attach", bytes.NewBuffer(jsonBody))
+			assert.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+
+			w := httptest.NewRecorder()
+			suite.router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+
+			var response map[string]interface{}
+			err = json.Unmarshal(w.Body.Bytes(), &response)
+			assert.NoError(t, err)
+
+			for key, expectedValue := range tc.expectedBody {
+				assert.Equal(t, expectedValue, response[key])
+			}
+		})
+	}
+
+	t.Run("Valid category attachment", func(t *testing.T) {
+		// Get post to verify category attachment
+		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%s", createdPost.PostID), nil)
+		assert.NoError(t, err)
+
+		w = httptest.NewRecorder()
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(t, http.StatusOK, w.Code)
+
+		var postResponse map[string]interface{}
+		err = json.Unmarshal(w.Body.Bytes(), &postResponse)
+		assert.NoError(t, err)
+
+		categories, ok := postResponse["categories"].([]interface{})
+		assert.True(t, ok)
+		assert.Len(t, categories, 1)
+		categoryResponse := categories[0].(map[string]interface{})
+		assert.Equal(t, categoryID, categoryResponse["id"])
+	})
 }

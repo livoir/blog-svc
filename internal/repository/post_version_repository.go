@@ -113,3 +113,18 @@ func (r *postVersionRepository) GetByIDForUpdate(ctx context.Context, tx domain.
 	}
 	return postVersion, nil
 }
+
+func (r *postVersionRepository) GetByID(ctx context.Context, id string) (*domain.PostVersion, error) {
+	query := `SELECT id, version_number, post_id, created_at, title, content, published_at FROM post_versions WHERE id = $1`
+	row := r.db.QueryRowContext(ctx, query, id)
+	var postVersion domain.PostVersion
+	err := row.Scan(&postVersion.ID, &postVersion.VersionNumber, &postVersion.PostID, &postVersion.CreatedAt, &postVersion.Title, &postVersion.Content, &postVersion.PublishedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, common.ErrPostVersionNotFound
+		}
+		logger.Log.Error("Failed to get post version by id", zap.Error(err))
+		return nil, common.NewCustomError(http.StatusInternalServerError, "error while trying to get post version by id")
+	}
+	return &postVersion, nil
+}
