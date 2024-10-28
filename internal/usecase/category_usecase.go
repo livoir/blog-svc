@@ -20,7 +20,7 @@ type CategoryUsecase struct {
 
 func NewCategoryUsecase(transactor domain.Transactor, categoryRepo domain.CategoryRepository, postVersionRepo domain.PostVersionRepository) (domain.CategoryUsecase, error) {
 	if transactor == nil || categoryRepo == nil || postVersionRepo == nil {
-		return nil, errors.New("nil transactor or category repository")
+		return nil, errors.New("nil transactor, category repository or post version repository")
 	}
 	return &CategoryUsecase{
 		transactor:      transactor,
@@ -167,7 +167,7 @@ func (u *CategoryUsecase) AttachToPostVersion(ctx context.Context, request *doma
 		err = common.ErrPostVersionNotFound
 		return err
 	}
-	category, err := u.categoryRepo.GetByID(ctx, request.CategoryIDs[0])
+	category, err := u.categoryRepo.GetByIDs(ctx, request.CategoryIDs)
 	if err != nil {
 		return err
 	}

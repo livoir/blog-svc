@@ -101,21 +101,30 @@ func (h *CategoryHandler) validateAndGetCategoryID(c *gin.Context) (string, bool
 }
 
 func (h *CategoryHandler) validateAttachCategoryToPostVersionRequestDTO(request *domain.AttachCategoryToPostVersionRequestDTO) error {
-	missingFields := []string{}
+	errors := []string{}
 	if request.PostVersionID == "" || !isValidID(request.PostVersionID) {
-		missingFields = append(missingFields, "post version id")
+		errors = append(errors, "invalid post version id")
 	}
 	if len(request.CategoryIDs) == 0 {
-		missingFields = append(missingFields, "category ids")
+		errors = append(errors, "category ids are required")
 	}
+	seenIDs := make(map[string]bool)
+	var invalidIDs []string
 	for _, categoryID := range request.CategoryIDs {
-		if !isValidID(categoryID) {
-			missingFields = append(missingFields, "category id")
-			break
+		if seenIDs[categoryID] {
+			errors = append(errors, fmt.Sprintf("duplicate category id: %s", categoryID))
 		}
+		if !isValidID(categoryID) {
+			invalidIDs = append(invalidIDs, fmt.Sprintf("invalid category id: %s", categoryID))
+		}
+		seenIDs[categoryID] = true
 	}
-	if len(missingFields) > 0 {
-		return common.NewCustomError(http.StatusBadRequest, fmt.Sprintf("%s required", strings.Join(missingFields, " and ")))
+	if len(invalidIDs) > 0 {
+		errors = append(errors, fmt.Sprintf("invalid category ids: %s", strings.Join(invalidIDs, " and ")))
 	}
+	if len(errors) > 0 {
+		return common.NewCustomError(http.StatusBadRequest, fmt.Sprintf("%s required", strings.Join(errors, "; ")))
+	}
+
 	return nil
 }

@@ -319,6 +319,8 @@ func (suite *E2ETestSuite) TestAttachCategoryToPostVersion() {
 
 	t.Run("Valid category attachment", func(t *testing.T) {
 		// Get post to verify category attachment
+		originalTitle := createdPost.Title
+		originalContent := createdPost.Content
 		req, err = http.NewRequest(http.MethodGet, fmt.Sprintf("/posts/%s", createdPost.PostID), nil)
 		assert.NoError(t, err)
 
@@ -331,10 +333,16 @@ func (suite *E2ETestSuite) TestAttachCategoryToPostVersion() {
 		err = json.Unmarshal(w.Body.Bytes(), &postResponse)
 		assert.NoError(t, err)
 
-		categories, ok := postResponse["categories"].([]interface{})
+		categories, ok := postResponse["categories"]
 		assert.True(t, ok)
-		assert.Len(t, categories, 1)
-		categoryResponse := categories[0].(map[string]interface{})
+		categoriesSlice, ok := categories.([]interface{})
+		assert.True(t, ok)
+		assert.Len(t, categoriesSlice, 1)
+		categoryResponse, ok := categoriesSlice[0].(map[string]interface{})
+		assert.True(t, ok)
 		assert.Equal(t, categoryID, categoryResponse["id"])
+		assert.Equal(t, category.Name, categoryResponse["name"])
+		assert.Equal(t, originalTitle, postResponse["title"])
+		assert.Equal(t, originalContent, postResponse["content"])
 	})
 }

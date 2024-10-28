@@ -40,7 +40,7 @@ type CategoryRepository interface {
 	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Category, error)
 	GetByName(ctx context.Context, name string) (*Category, error)
 	AttachToPostVersion(ctx context.Context, tx Transaction, postVersionCategories []PostVersionCategory) error
-	GetByID(ctx context.Context, id string) (*Category, error)
+	GetByIDs(ctx context.Context, ids []string) ([]*Category, error)
 }
 
 type CategoryUsecase interface {

@@ -102,8 +102,8 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 	}
 	return &domain.PostResponseDTO{
 		PostID:        post.ID,
-		Title:         request.Title,
-		Content:       request.Content,
+		Title:         postVersion.Title,
+		Content:       postVersion.Content,
 		PostVersionID: postVersion.ID,
 	}, nil
 }
