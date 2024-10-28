@@ -47,13 +47,7 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	response := domain.PostWithVersion{
-		Post:          post.Post,
-		Title:         post.Title,
-		Content:       post.Content,
-		VersionNumber: post.VersionNumber,
-	}
-	c.JSON(http.StatusOK, response)
+	c.JSON(http.StatusOK, post)
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {

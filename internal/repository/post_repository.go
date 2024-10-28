@@ -9,6 +9,7 @@ import (
 	"livoir-blog/pkg/ulid"
 	"net/http"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -23,22 +24,29 @@ func NewPostRepository(db *sql.DB) (domain.PostRepository, error) {
 	return &postRepository{db}, nil
 }
 
-func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
-	post := &domain.PostWithVersion{}
-	var currentVersionID sql.NullString
-	err := r.db.QueryRowContext(ctx, "SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number FROM posts p JOIN post_versions pv ON p.id = pv.post_id WHERE p.id = $1 ORDER BY pv.version_number DESC LIMIT 1", id).
-		Scan(&post.ID, &currentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content, &post.VersionNumber)
+func (r *postRepository) GetByID(ctx context.Context, id string) (*domain.PostDetail, error) {
+	var post domain.PostDetail
+	var categoryIDs pq.StringArray
+	var categoryNames pq.StringArray
+	query := `SELECT p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number, ARRAY_AGG(COALESCE(c.id, '')), ARRAY_AGG(COALESCE(c.name, '')) FROM posts p JOIN post_versions pv ON p.id = pv.post_id LEFT JOIN post_version_categories pvc ON pv.id = pvc.post_version_id LEFT JOIN categories c ON pvc.category_id = c.id WHERE p.id = $1 GROUP BY p.id, p.current_version_id, p.created_at, p.updated_at, pv.title, pv.content, pv.version_number ORDER BY pv.version_number DESC LIMIT 1`
+	err := r.db.QueryRowContext(ctx, query, id).Scan(&post.ID, &post.CurrentVersionID, &post.CreatedAt, &post.UpdatedAt, &post.Title, &post.Content, &post.VersionNumber, &categoryIDs, &categoryNames)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, nil
+			return nil, common.ErrPostNotFound
 		}
 		logger.Log.Error("Failed to get post by id", zap.Error(err))
 		return nil, common.ErrInternalServerError
 	}
-	if currentVersionID.Valid {
-		post.CurrentVersionID = currentVersionID.String
+	for i := range categoryIDs {
+		if categoryIDs[i] == "" {
+			continue
+		}
+		post.Categories = append(post.Categories, domain.Category{
+			ID:   categoryIDs[i],
+			Name: categoryNames[i],
+		})
 	}
-	return post, nil
+	return &post, nil
 }
 
 func (r *postRepository) Create(ctx context.Context, tx domain.Transaction, post *domain.Post) error {

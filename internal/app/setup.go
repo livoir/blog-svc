@@ -38,7 +38,7 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 		logger.Log.Error("Failed to initialize category repository", zap.Error(err))
 		return nil, err
 	}
-	categoryUsecase, err := usecase.NewCategoryUsecase(transactor, categoryRepo)
+	categoryUsecase, err := usecase.NewCategoryUsecase(transactor, categoryRepo, postVersionRepo)
 	if err != nil {
 		logger.Log.Error("Failed to initialize category usecase", zap.Error(err))
 		return nil, err

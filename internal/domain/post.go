@@ -28,48 +28,38 @@ type Post struct {
 	CreatedAt        time.Time `json:"created_at"`
 	UpdatedAt        time.Time `json:"updated_at"`
 }
-type PostWithVersion struct {
+type PostDetail struct {
 	Post
-	Title         string `json:"title"`
-	Content       string `json:"content"`
-	VersionNumber int64  `json:"version_number"`
+	Title         string     `json:"title"`
+	Content       string     `json:"content"`
+	VersionNumber int64      `json:"version_number"`
+	Categories    []Category `json:"categories"`
 }
+
+type PostDetailDTO struct {
+	PostDetail
+}
+
 type PostRepository interface {
-	GetByID(ctx context.Context, id string) (*PostWithVersion, error)
+	GetByID(ctx context.Context, id string) (*PostDetail, error)
 	Create(ctx context.Context, tx Transaction, post *Post) error
 	Update(ctx context.Context, tx Transaction, post *Post) error
 	GetByIDForUpdate(ctx context.Context, tx Transaction, id string) (*Post, error)
 }
 
 type PostUsecase interface {
-	GetByID(ctx context.Context, id string) (*PostWithVersion, error)
+	GetByID(ctx context.Context, id string) (*PostDetailDTO, error)
 	Create(ctx context.Context, post *CreatePostDTO) (*PostResponseDTO, error)
 	Update(ctx context.Context, id string, post *UpdatePostDTO) (*PostResponseDTO, error)
 	Publish(ctx context.Context, id string) (*PublishResponseDTO, error)
 	DeletePostVersionByPostID(ctx context.Context, id string) error
 }
 
-type PostVersion struct {
-	ID            string     `json:"id"`
-	VersionNumber int64      `json:"version_number"`
-	PostID        string     `json:"post_id"`
-	Title         string     `json:"title"`
-	Content       string     `json:"content"`
-	PublishedAt   *time.Time `json:"published_at"`
-	CreatedAt     time.Time  `json:"created_at"`
-}
-
-type PostVersionRepository interface {
-	Create(ctx context.Context, tx Transaction, postVersion *PostVersion) error
-	Update(ctx context.Context, tx Transaction, postVersion *PostVersion) error
-	GetLatestByPostIDForUpdate(ctx context.Context, tx Transaction, postID string) (*PostVersion, error)
-	Delete(ctx context.Context, tx Transaction, id string) error
-}
-
 type PostResponseDTO struct {
-	PostID  string `json:"post_id"`
-	Title   string `json:"title"`
-	Content string `json:"content"`
+	PostID        string `json:"post_id"`
+	PostVersionID string `json:"post_version_id"`
+	Title         string `json:"title"`
+	Content       string `json:"content"`
 }
 
 type PublishResponseDTO struct {

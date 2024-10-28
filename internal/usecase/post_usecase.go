@@ -32,7 +32,7 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 	}, nil
 }
 
-func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostWithVersion, error) {
+func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostDetailDTO, error) {
 	post, err := u.postRepo.GetByID(ctx, id)
 	if err != nil {
 		return nil, err
@@ -40,7 +40,10 @@ func (u *postUsecase) GetByID(ctx context.Context, id string) (*domain.PostWithV
 	if post == nil {
 		return nil, common.ErrPostNotFound
 	}
-	return post, nil
+	postDTO := &domain.PostDetailDTO{
+		PostDetail: *post,
+	}
+	return postDTO, nil
 }
 
 func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO) (*domain.PostResponseDTO, error) {
@@ -98,9 +101,10 @@ func (u *postUsecase) Create(ctx context.Context, request *domain.CreatePostDTO)
 		return nil, err
 	}
 	return &domain.PostResponseDTO{
-		PostID:  post.ID,
-		Title:   request.Title,
-		Content: request.Content,
+		PostID:        post.ID,
+		Title:         postVersion.Title,
+		Content:       postVersion.Content,
+		PostVersionID: postVersion.ID,
 	}, nil
 }
 
