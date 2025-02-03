@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/auth"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
 	"net/http"
@@ -83,8 +84,8 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err := database.RunMigrations(suite.db, migrationPath); err != nil {
 		suite.T().Fatalf("failed to run migrations: %s", err)
 	}
-
-	suite.router, err = app.SetupRouter(suite.db)
+	oauthConfig := auth.NewGoogleOauthConfig()
+	suite.router, err = app.SetupRouter(suite.db, oauthConfig)
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}

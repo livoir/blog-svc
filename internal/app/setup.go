@@ -10,9 +10,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
+	"golang.org/x/oauth2"
 )
 
-func SetupRouter(db *sql.DB) (*gin.Engine, error) {
+func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config) (*gin.Engine, error) {
 	postRepo, err := repository.NewPostRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post repository", zap.Error(err))
@@ -21,6 +22,11 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 	postVersionRepo, err := repository.NewPostVersionRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post version repository", zap.Error(err))
+		return nil, err
+	}
+	oauthRepo, err := repository.NewOauthGoogleRepository(oauthConfig)
+	if err != nil {
+		logger.Log.Error("Failed to initialize oauth repository", zap.Error(err))
 		return nil, err
 	}
 	transactor, err := database.NewSQLTransactor(db)
@@ -43,6 +49,11 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 		logger.Log.Error("Failed to initialize category usecase", zap.Error(err))
 		return nil, err
 	}
+	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo)
+	if err != nil {
+		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
+		return nil, err
+	}
 
 	r := gin.New()
 	r.Use(gin.Logger())
@@ -54,6 +65,10 @@ func SetupRouter(db *sql.DB) (*gin.Engine, error) {
 	categoriesApi := r.Group("/categories")
 	{
 		http.NewCategoryHandler(categoriesApi, categoryUsecase)
+	}
+	auth := r.Group("/auth")
+	{
+		http.NewAuthHandler(auth, oauthUsecase)
 	}
 
 	return r, nil
