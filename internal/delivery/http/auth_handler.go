@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -26,13 +27,13 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state token"})
+		handleError(c, common.NewCustomError(http.StatusBadRequest, "Failed to generate state token"))
 		return
 	}
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Store state in session or cookie
-	c.SetCookie("state", state, 3600, "/", "", false, true)
+	c.SetCookie("state", state, 3600, "/", "", true, true)
 
 	// Redirect to Google's consent page
 	url := h.OAuthUsecase.GetRedirectLoginUrl(c.Request.Context(), state)
@@ -41,15 +42,19 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	// Verify state
-	state, _ := c.Cookie("state")
+	state, err := c.Cookie("state")
+	if err != nil {
+		handleError(c, common.NewCustomError(http.StatusUnauthorized, "State parameter is missing"))
+		return
+	}
 	if state != c.Query("state") {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid state parameter"})
+		handleError(c, common.NewCustomError(http.StatusUnauthorized, "Invalid state parameter"))
 		return
 	}
 	code := c.Query("code")
 	user, err := h.OAuthUsecase.LoginCallback(c.Request.Context(), code)
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Failed to get user info"})
+		handleError(c, err)
 		return
 	}
 

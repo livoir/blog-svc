@@ -5,6 +5,7 @@ import (
 	"livoir-blog/internal/delivery/http"
 	"livoir-blog/internal/repository"
 	"livoir-blog/internal/usecase"
+	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
 
@@ -14,6 +15,15 @@ import (
 )
 
 func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config) (*gin.Engine, error) {
+	if db == nil {
+		logger.Log.Error("Database connection is nil")
+		return nil, common.NewCustomError(500, "Database connection is nil")
+	}
+	if oauthConfig == nil {
+		logger.Log.Error("OAuth config is nil")
+		return nil, common.NewCustomError(500, "OAuth config is nil")
+	}
+
 	postRepo, err := repository.NewPostRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post repository", zap.Error(err))

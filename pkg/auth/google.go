@@ -3,6 +3,8 @@ package auth
 import (
 	"context"
 	"encoding/json"
+	"livoir-blog/pkg/common"
+	"net/http"
 
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
@@ -34,19 +36,6 @@ func NewGoogleOauthConfig() *oauth2.Config {
 	}
 }
 
-func InitializeOAuth() {
-	GoogleOauthConfig = &oauth2.Config{
-		ClientID:     viper.GetString("auth.google.client_id"),
-		ClientSecret: viper.GetString("auth.google.client_secret"),
-		RedirectURL:  viper.GetString("auth.google.redirect_url"),
-		Scopes: []string{
-			"https://www.googleapis.com/auth/userinfo.email",
-			"https://www.googleapis.com/auth/userinfo.profile",
-		},
-		Endpoint: google.Endpoint,
-	}
-}
-
 func GetUserInfo(token *oauth2.Token) (*GoogleUser, error) {
 	client := GoogleOauthConfig.Client(context.Background(), token)
 	response, err := client.Get("https://www.googleapis.com/oauth2/v2/userinfo")
@@ -55,6 +44,9 @@ func GetUserInfo(token *oauth2.Token) (*GoogleUser, error) {
 	}
 	defer response.Body.Close()
 
+	if response.StatusCode != http.StatusOK {
+		return nil, common.NewCustomError(response.StatusCode, "Failed to get user info")
+	}
 	user := &GoogleUser{}
 	if err := json.NewDecoder(response.Body).Decode(user); err != nil {
 		return nil, err

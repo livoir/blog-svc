@@ -35,11 +35,13 @@ func (o *OAuthGoogleRepository) GetLoggedInUser(ctx context.Context, code string
 	}
 	user, err := o.GoogleOauthConfig.Client(ctx, token).Get("https://www.googleapis.com/oauth2/v2/userinfo")
 	if err != nil {
+		logger.Log.Error("Failed to get user info", zap.Error(err))
 		return nil, err
 	}
 	var oauthUser domain.OAuthUser
 	defer user.Body.Close()
 	if err := json.NewDecoder(user.Body).Decode(&oauthUser); err != nil {
+		logger.Log.Error("Failed to decode user info", zap.Error(err))
 		return nil, err
 	}
 	return &oauthUser, nil

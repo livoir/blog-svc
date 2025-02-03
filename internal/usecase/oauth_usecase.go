@@ -28,6 +28,5 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, code string) (*domain
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(oauthUser)
 	return oauthUser, err
 }
