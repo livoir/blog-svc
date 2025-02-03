@@ -24,7 +24,11 @@ func NewAuthHandler(r *gin.RouterGroup, usecase domain.OAuthUsecase) {
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	// Generate state token
 	b := make([]byte, 32)
-	rand.Read(b)
+	_, err := rand.Read(b)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate state token"})
+		return
+	}
 	state := base64.StdEncoding.EncodeToString(b)
 
 	// Store state in session or cookie
