@@ -1,11 +1,18 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"livoir-blog/internal/app"
+	"livoir-blog/pkg/auth"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
+	"net/http"
+	"os"
+	"os/signal"
 	"strings"
+	"syscall"
+	"time"
 
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
@@ -31,8 +38,8 @@ func main() {
 	dbPort := viper.GetString("db.port")
 	dbUser := viper.GetString("db.user")
 	dbPassword := viper.GetString("db.password")
-	dbName := viper.GetString("db.name")
-
+	dbName := viper.GetString("db.database")
+	fmt.Println(dbHost, dbPort, dbUser, dbPassword, dbName)
 	// Validate that all required configuration is present
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
 		logger.Log.Error("Missing required database configuration")
@@ -52,7 +59,10 @@ func main() {
 		return
 	}
 
-	router, err := app.SetupRouter(db)
+	// Initialize OAuth2
+	oauthConfig := auth.NewGoogleOauthConfig()
+
+	router, err := app.SetupRouter(db, oauthConfig)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))
 		return
@@ -64,10 +74,44 @@ func main() {
 		return
 	}
 
-	if err := router.Run(":" + port); err != nil {
-		logger.Log.Error("Failed to run server", zap.Error(err))
-		return
+	srv := &http.Server{
+		Addr:              ":" + port,
+		Handler:           router,
+		ReadHeaderTimeout: 3 * time.Second,
 	}
+
+	// Create channel for shutdown signals
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
+
+	// Start server in goroutine
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			logger.Log.Error("Failed to start server", zap.Error(err))
+		}
+	}()
+
+	logger.Log.Info("Server is running on port " + port)
+
+	// Wait for shutdown signal
+	<-quit
+	logger.Log.Info("Shutting down server...")
+
+	// Create shutdown context with timeout
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	// Shutdown server gracefully
+	if err := srv.Shutdown(ctx); err != nil {
+		logger.Log.Error("Server forced to shutdown:", zap.Error(err))
+	}
+
+	// Close database connection
+	if err := db.Close(); err != nil {
+		logger.Log.Error("Error closing database connection:", zap.Error(err))
+	}
+
+	logger.Log.Info("Server exited properly")
 }
 
 func initConfig() error {
