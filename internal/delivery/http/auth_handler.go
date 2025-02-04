@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
 	"net/http"
@@ -32,8 +33,11 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	}
 	state := base64.StdEncoding.EncodeToString(b)
 
+	redirect := c.Query("redirect")
+
 	// Store state in session or cookie
 	c.SetCookie("state", state, 3600, "/", "", true, true)
+	c.SetCookie("redirect", redirect, 3600, "/", "", true, true)
 
 	// Redirect to Google's consent page
 	url := h.OAuthUsecase.GetRedirectLoginUrl(c.Request.Context(), state)
@@ -51,15 +55,18 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		handleError(c, common.NewCustomError(http.StatusUnauthorized, "Invalid state parameter"))
 		return
 	}
+	// Get redirect
+	redirect, err := c.Cookie("redirect")
+	if err != nil {
+		handleError(c, common.NewCustomError(http.StatusUnauthorized, "Redirect parameter is missing"))
+		return
+	}
 	code := c.Query("code")
 	user, err := h.OAuthUsecase.LoginCallback(c.Request.Context(), code)
 	if err != nil {
 		handleError(c, err)
 		return
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"email": user.Email,
-		"name":  user.Name,
-	})
+	fmt.Println(user)
+	c.Redirect(http.StatusTemporaryRedirect, redirect)
 }
