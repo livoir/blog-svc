@@ -9,7 +9,7 @@ import (
 	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap/zapcore"
+	"go.uber.org/zap"
 )
 
 type AuthHandler struct {
@@ -35,6 +35,10 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	state := base64.StdEncoding.EncodeToString(b)
 
 	redirect := c.Query("redirect")
+	if !isValidRedirectUrl(redirect) {
+		handleError(c, common.NewCustomError(http.StatusBadRequest, "Invalid redirect URL"))
+		return
+	}
 
 	// Store state in session or cookie
 	c.SetCookie("state", state, 3600, "/", "", true, true)
@@ -68,9 +72,8 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	logger.Log.Info("User: ", zapcore.Field{
-		Key:       "User",
-		Interface: user,
-	})
+	logger.Log.Info("Sucessfully Logged In", zap.Any("user", user))
+	c.SetCookie("state", "", -1, "/", "", true, true)
+	c.SetCookie("redirect", "", -1, "/", "", true, true)
 	c.Redirect(http.StatusTemporaryRedirect, redirect)
 }
