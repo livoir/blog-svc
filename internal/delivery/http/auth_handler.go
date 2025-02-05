@@ -3,12 +3,13 @@ package http
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"fmt"
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
+	"livoir-blog/pkg/logger"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap/zapcore"
 )
 
 type AuthHandler struct {
@@ -67,6 +68,9 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	fmt.Println(user)
+	logger.Log.Info("User: ", zapcore.Field{
+		Key:       "User",
+		Interface: user,
+	})
 	c.Redirect(http.StatusTemporaryRedirect, redirect)
 }
