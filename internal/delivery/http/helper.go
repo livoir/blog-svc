@@ -6,10 +6,12 @@ import (
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
 	"net/http"
+	"net/url"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
+	"github.com/spf13/viper"
 )
 
 func validateUpdatePostDTO(request *domain.UpdatePostDTO) error {
@@ -55,4 +57,18 @@ func handleError(c *gin.Context, err error) {
 		return
 	}
 	c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
+}
+
+func isValidRedirectUrl(redirect string) bool {
+	allowedRedirects := viper.GetStringSlice("server.allowed_redirects")
+	parsedUrl, err := url.Parse(redirect)
+	if err != nil {
+		return false
+	}
+	for _, allowed := range allowedRedirects {
+		if allowed == parsedUrl.Host {
+			return true
+		}
+	}
+	return false
 }

@@ -39,7 +39,6 @@ func main() {
 	dbUser := viper.GetString("db.user")
 	dbPassword := viper.GetString("db.password")
 	dbName := viper.GetString("db.database")
-	fmt.Println(dbHost, dbPort, dbUser, dbPassword, dbName)
 	// Validate that all required configuration is present
 	if dbHost == "" || dbPort == "" || dbUser == "" || dbPassword == "" || dbName == "" {
 		logger.Log.Error("Missing required database configuration")
