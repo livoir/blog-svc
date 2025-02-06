@@ -10,6 +10,19 @@ CREATE TABLE administrator (
     deleted_at TIMESTAMP DEFAULT NULL
 );
 CREATE UNIQUE INDEX idx_administrator_email ON administrator(email);
+
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_administrator_updated_at
+    BEFORE UPDATE ON administrator
+    FOR EACH ROW
+    EXECUTE FUNCTION update_updated_at_column();
 -- +goose StatementEnd
 
 -- +goose Down

@@ -7,11 +7,6 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 )
 
-type JWTService struct {
-	privateKey *rsa.PrivateKey
-	publicKey  *rsa.PublicKey
-}
-
 func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
 	privBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {

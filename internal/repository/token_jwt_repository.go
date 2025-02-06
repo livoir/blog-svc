@@ -53,10 +53,26 @@ func (t *TokenJWTRepository) Validate(ctx context.Context, tokenStr string) (*do
 	if !ok || !token.Valid {
 		return nil, common.ErrInvalidToken
 	}
+	userID, ok := claims["user_id"].(string)
+	if !ok {
+		return nil, common.ErrInvalidToken
+	}
+	email, ok := claims["email"].(string)
+	if !ok {
+		return nil, common.ErrInvalidToken
+	}
+	issuedAt, ok := claims["iat"].(float64)
+	if !ok {
+		return nil, common.ErrInvalidToken
+	}
+	expiredAt, ok := claims["exp"].(float64)
+	if !ok {
+		return nil, common.ErrInvalidToken
+	}
 	return &domain.TokenData{
-		UserID:    claims["user_id"].(string),
-		Email:     claims["email"].(string),
-		IssuedAt:  int64(claims["iat"].(float64)),
-		ExpiredAt: int64(claims["exp"].(float64)),
+		UserID:    userID,
+		Email:     email,
+		IssuedAt:  int64(issuedAt),
+		ExpiredAt: int64(expiredAt),
 	}, nil
 }
