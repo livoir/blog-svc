@@ -18,11 +18,11 @@ func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicK
 	if err != nil {
 		return nil, nil, err
 	}
-	filepath.Clean(publicKeyPath)
 	pubBytes, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, nil, err
 	}
+	filepath.Clean(publicKeyPath)
 	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubBytes)
 	if err != nil {
 		return nil, nil, err
