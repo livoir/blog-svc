@@ -36,6 +36,8 @@ go.work.sum
 
 # Config file
 configs/config.yaml
+configs/server.key
+configs/server.pem
 
 # Coverage
 coverage

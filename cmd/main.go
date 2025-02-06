@@ -6,6 +6,7 @@ import (
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/auth"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
 	"net/http"
 	"os"
@@ -60,8 +61,13 @@ func main() {
 
 	// Initialize OAuth2
 	oauthConfig := auth.NewGoogleOauthConfig()
+	privateKey, publicKey, err := jwt.NewJWT(viper.GetString("auth.jwt.private_key"), viper.GetString("auth.jwt.public_key"))
+	if err != nil {
+		logger.Log.Error("Failed to initialize JWT keys", zap.Error(err))
+		return
+	}
 
-	router, err := app.SetupRouter(db, oauthConfig)
+	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))
 		return

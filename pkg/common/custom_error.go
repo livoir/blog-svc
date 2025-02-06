@@ -10,6 +10,8 @@ var (
 	ErrPostVersionNotFound   = NewCustomError(http.StatusNotFound, "The requested post version was not found")
 	ErrCategoryNotFound      = NewCustomError(http.StatusNotFound, "category not found")
 	ErrCategoryNameDuplicate = NewCustomError(http.StatusBadRequest, "category name already exists")
+	ErrInvalidSigningMethod  = NewCustomError(http.StatusUnauthorized, "invalid signing method")
+	ErrInvalidToken          = NewCustomError(http.StatusUnauthorized, "invalid token")
 )
 
 type CustomError struct {
