@@ -9,8 +9,8 @@ import (
 )
 
 func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
-	filepath.Clean(privateKeyPath)
-	filepath.Clean(publicKeyPath)
+	privateKeyPath = filepath.Clean(privateKeyPath)
+	publicKeyPath = filepath.Clean(publicKeyPath)
 	privBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return nil, nil, err
