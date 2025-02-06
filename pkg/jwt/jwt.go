@@ -3,6 +3,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"os"
+	"path/filepath"
 
 	"github.com/golang-jwt/jwt/v5"
 )
@@ -12,11 +13,12 @@ func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicK
 	if err != nil {
 		return nil, nil, err
 	}
+	filepath.Clean(privateKeyPath)
 	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
 	if err != nil {
 		return nil, nil, err
 	}
-
+	filepath.Clean(publicKeyPath)
 	pubBytes, err := os.ReadFile(publicKeyPath)
 	if err != nil {
 		return nil, nil, err
