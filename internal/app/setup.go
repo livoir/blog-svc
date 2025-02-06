@@ -1,6 +1,7 @@
 package app
 
 import (
+	"crypto/rsa"
 	"database/sql"
 	"livoir-blog/internal/delivery/http"
 	"livoir-blog/internal/repository"
@@ -14,7 +15,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config) (*gin.Engine, error) {
+func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*gin.Engine, error) {
 	if db == nil {
 		logger.Log.Error("Database connection is nil")
 		return nil, common.NewCustomError(500, "Database connection is nil")
@@ -44,14 +45,20 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config) (*gin.Engine, error) {
 		logger.Log.Error("Failed to initialize transactor", zap.Error(err))
 		return nil, err
 	}
-	postUsecase, err := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
-	if err != nil {
-		logger.Log.Error("Failed to initialize post usecase", zap.Error(err))
-		return nil, err
-	}
 	categoryRepo, err := repository.NewCategoryRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize category repository", zap.Error(err))
+		return nil, err
+	}
+	tokenRepo, err := repository.NewTokenJWTRepository(privateKey, publicKey)
+	if err != nil {
+		logger.Log.Error("Failed to initialize token repository", zap.Error(err))
+		return nil, err
+	}
+
+	postUsecase, err := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
+	if err != nil {
+		logger.Log.Error("Failed to initialize post usecase", zap.Error(err))
 		return nil, err
 	}
 	categoryUsecase, err := usecase.NewCategoryUsecase(transactor, categoryRepo, postVersionRepo)
@@ -59,7 +66,8 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config) (*gin.Engine, error) {
 		logger.Log.Error("Failed to initialize category usecase", zap.Error(err))
 		return nil, err
 	}
-	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo)
+
+	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err

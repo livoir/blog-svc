@@ -10,6 +10,7 @@ import (
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/auth"
 	"livoir-blog/pkg/database"
+	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
 	"net/http"
 	"net/http/httptest"
@@ -85,7 +86,11 @@ func (suite *E2ETestSuite) SetupSuite() {
 		suite.T().Fatalf("failed to run migrations: %s", err)
 	}
 	oauthConfig := auth.NewGoogleOauthConfig()
-	suite.router, err = app.SetupRouter(suite.db, oauthConfig)
+	privateKey, publicKey, err := jwt.NewJWT("../../configs/server.key", "../../configs/server.pem")
+	if err != nil {
+		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
+	}
+	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey)
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}

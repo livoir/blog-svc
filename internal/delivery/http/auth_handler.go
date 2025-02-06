@@ -75,5 +75,6 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	logger.Log.Info("Sucessfully Logged In", zap.Any("user", user))
 	c.SetCookie("state", "", -1, "/", "", true, true)
 	c.SetCookie("redirect", "", -1, "/", "", true, true)
+	c.SetCookie("access_token", user.AccessToken, 300, "/", "", true, true)
 	c.Redirect(http.StatusTemporaryRedirect, redirect)
 }
