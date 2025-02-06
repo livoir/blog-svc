@@ -51,6 +51,10 @@ jobs:
       with:
         version: latest
         args: --timeout=5m
+    
+    # Run create private and public key
+    - name: Create private and public key
+      run: make generate-cert
 
     # Run tests
     - name: Run Tests
