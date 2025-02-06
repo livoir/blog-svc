@@ -17,7 +17,7 @@ migration-create:
 migration-up:
 	$(goose) up
 
-test:
+run-tests:
 	go test -v -cover ./...
 
 generate-cert:
