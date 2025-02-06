@@ -9,11 +9,12 @@ import (
 )
 
 func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicKey, error) {
+	filepath.Clean(privateKeyPath)
+	filepath.Clean(publicKeyPath)
 	privBytes, err := os.ReadFile(privateKeyPath)
 	if err != nil {
 		return nil, nil, err
 	}
-	filepath.Clean(privateKeyPath)
 	privKey, err := jwt.ParseRSAPrivateKeyFromPEM(privBytes)
 	if err != nil {
 		return nil, nil, err
@@ -22,7 +23,6 @@ func NewJWT(privateKeyPath, publicKeyPath string) (*rsa.PrivateKey, *rsa.PublicK
 	if err != nil {
 		return nil, nil, err
 	}
-	filepath.Clean(publicKeyPath)
 	pubKey, err := jwt.ParseRSAPublicKeyFromPEM(pubBytes)
 	if err != nil {
 		return nil, nil, err
