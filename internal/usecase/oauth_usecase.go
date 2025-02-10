@@ -4,24 +4,31 @@ import (
 	"context"
 	"fmt"
 	"livoir-blog/internal/domain"
+	"livoir-blog/pkg/common"
 	"time"
 )
 
 type OAuthUsecase struct {
-	oauthRepo domain.OAuthRepository
-	tokenRepo domain.TokenRepository
+	oauthRepo         domain.OAuthRepository
+	tokenRepo         domain.TokenRepository
+	administratorRepo domain.AdministratorRepository
 }
 
-func NewOauthUsecase(oauthRepo domain.OAuthRepository, tokenRepo domain.TokenRepository) (domain.OAuthUsecase, error) {
+func NewOauthUsecase(oauthRepo domain.OAuthRepository, tokenRepo domain.TokenRepository, administratorRepo domain.AdministratorRepository) (domain.OAuthUsecase, error) {
 	if oauthRepo == nil {
 		return nil, fmt.Errorf("oauth repository is nil")
 	}
 	if tokenRepo == nil {
 		return nil, fmt.Errorf("token repository is nil")
 	}
+	if administratorRepo == nil {
+		return nil, fmt.Errorf("administrator repository is nil")
+	}
+
 	return &OAuthUsecase{
-		oauthRepo: oauthRepo,
-		tokenRepo: tokenRepo,
+		oauthRepo:         oauthRepo,
+		tokenRepo:         tokenRepo,
+		administratorRepo: administratorRepo,
 	}, nil
 }
 
@@ -33,6 +40,13 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, code string) (*domain
 	oauthUser, err := uc.oauthRepo.GetLoggedInUser(ctx, code)
 	if err != nil {
 		return nil, err
+	}
+	admin, err := uc.administratorRepo.FindByEmail(ctx, oauthUser.Email)
+	if err != nil {
+		return nil, err
+	}
+	if admin == nil {
+		return nil, common.ErrUserNotFound
 	}
 	now := time.Now()
 	expiredAt := now.Add(time.Minute * 10)
