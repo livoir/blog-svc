@@ -12,6 +12,7 @@ var (
 	ErrCategoryNameDuplicate = NewCustomError(http.StatusBadRequest, "category name already exists")
 	ErrInvalidSigningMethod  = NewCustomError(http.StatusUnauthorized, "invalid signing method")
 	ErrInvalidToken          = NewCustomError(http.StatusUnauthorized, "invalid token")
+	ErrUserNotFound          = NewCustomError(http.StatusNotFound, "user not found")
 )
 
 type CustomError struct {

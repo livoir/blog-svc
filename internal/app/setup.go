@@ -55,6 +55,11 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		logger.Log.Error("Failed to initialize token repository", zap.Error(err))
 		return nil, err
 	}
+	administratorRepo, err := repository.NewAdministratorRepository(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize administrator repository", zap.Error(err))
+		return nil, err
+	}
 
 	postUsecase, err := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
 	if err != nil {
@@ -67,7 +72,7 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		return nil, err
 	}
 
-	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo)
+	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo, administratorRepo)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err
