@@ -6,6 +6,7 @@ import (
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -24,8 +25,11 @@ func NewAdministratorRepository(db *sql.DB) (domain.AdministratorRepository, err
 }
 
 func (r *AdministratorRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.Administrator, error) {
+	if email == "" {
+		return nil, common.NewCustomError(http.StatusBadRequest, "email is required")
+	}
 	query := `SELECT id, full_name, email, password_hash, created_at, updated_at FROM administrators WHERE email = $1`
-	row := r.db.QueryRow(query, email)
+	row := r.db.QueryRowContext(ctx, query, email)
 
 	admin := domain.Administrator{}
 	err := row.Scan(&admin.ID, &admin.FullName, &admin.Email, &admin.PasswordHash, &admin.CreatedAt, &admin.UpdatedAt)
@@ -33,7 +37,7 @@ func (r *AdministratorRepositoryImpl) FindByEmail(ctx context.Context, email str
 		if err == sql.ErrNoRows {
 			return nil, common.ErrUserNotFound
 		}
-		logger.Log.Error("failed to get administrator by email", zap.Error(err))
+		logger.Log.Error("failed to get administrator by email", zap.Error(err), zap.String("email", email))
 		return nil, err
 	}
 
