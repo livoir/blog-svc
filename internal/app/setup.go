@@ -15,7 +15,7 @@ import (
 	"golang.org/x/oauth2"
 )
 
-func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*gin.Engine, error) {
+func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey, encryptionKey string) (*gin.Engine, error) {
 	if db == nil {
 		logger.Log.Error("Database connection is nil")
 		return nil, common.NewCustomError(500, "Database connection is nil")
@@ -60,6 +60,11 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		logger.Log.Error("Failed to initialize administrator repository", zap.Error(err))
 		return nil, err
 	}
+	administratorSessionRepo, err := repository.NewAdministratorSessionRepository(db)
+	if err != nil {
+		logger.Log.Error("Failed to initialize administrator session repository", zap.Error(err))
+		return nil, err
+	}
 
 	postUsecase, err := usecase.NewPostUsecase(postRepo, postVersionRepo, transactor)
 	if err != nil {
@@ -72,7 +77,7 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		return nil, err
 	}
 
-	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo, administratorRepo)
+	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo, administratorRepo, administratorSessionRepo, transactor, encryptionKey)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err

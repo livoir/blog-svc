@@ -66,8 +66,8 @@ func main() {
 		logger.Log.Error("Failed to initialize JWT keys", zap.Error(err))
 		return
 	}
-
-	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey)
+	encryptionKey := viper.GetString("auth.encryption_key")
+	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))
 		return
