@@ -57,6 +57,8 @@ func (suite *E2ETestSuite) SetupSuite() {
 			WithStartupTimeout(30 * time.Second),
 	}
 
+	encryptionKey := "thisisaverysecurekeywith32bytess"
+
 	pgContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
 		ContainerRequest: req,
 		Started:          true,
@@ -90,7 +92,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
 	}
-	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey)
+	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey, encryptionKey)
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
