@@ -61,7 +61,20 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 	if err != nil {
 		return nil, err
 	}
-	defer tx.Rollback()
+	defer func(tx domain.Transaction) {
+		if p := recover(); p != nil {
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction", zap.Error(e), zap.String("error_source", "panic_recovery"))
+			}
+			panic(p)
+		} else if err != nil {
+			e := tx.Rollback()
+			if e != nil {
+				logger.Log.Error("Failed to rollback transaction", zap.Error(e), zap.String("error_source", "error_propagation"))
+			}
+		}
+	}(tx)
 	oauthUser, err := uc.oauthRepo.GetLoggedInUser(ctx, request.Code)
 	if err != nil {
 		return nil, err
