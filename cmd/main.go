@@ -67,6 +67,10 @@ func main() {
 		return
 	}
 	encryptionKey := viper.GetString("auth.encryption_key")
+	if len(encryptionKey) != 16 && len(encryptionKey) != 24 && len(encryptionKey) != 32 {
+		logger.Log.Error("Invalid encryption key length", zap.String("key", encryptionKey))
+		return
+	}
 	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))

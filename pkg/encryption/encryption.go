@@ -10,6 +10,10 @@ import (
 )
 
 func Encrypt(plainText string, key []byte) (string, error) {
+	if !isValidAESKey(key) {
+		return "", errors.New("invalid AES key length (must be 16, 24, or 32 bytes long)")
+	}
+
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return "", err
@@ -56,4 +60,14 @@ func Decrypt(cipherTextBase64 string, key []byte) (string, error) {
 	}
 
 	return string(plainText), nil
+}
+
+func isValidAESKey(key []byte) bool {
+	validLengths := []int{16, 24, 32} // AES-128, AES-192, AES-256
+	for _, length := range validLengths {
+		if len(key) == length {
+			return true
+		}
+	}
+	return false
 }

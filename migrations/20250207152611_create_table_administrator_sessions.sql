@@ -9,7 +9,7 @@ CREATE TABLE administrator_sessions (
     user_agent TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
-    FOREIGN KEY (administrator_id) REFERENCES administrators(id)
+    FOREIGN KEY (administrator_id) REFERENCES administrators(id) ON DELETE CASCADE
 );
 
 CREATE INDEX idx_administrator_sessions_user_id_encrypted_token ON administrator_sessions (administrator_id, encrypted_token);

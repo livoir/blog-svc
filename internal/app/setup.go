@@ -25,6 +25,11 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		return nil, common.NewCustomError(500, "OAuth config is nil")
 	}
 
+	if encryptionKey == "" {
+		logger.Log.Error("Encryption key is empty")
+		return nil, common.NewCustomError(500, "Encryption key is required")
+	}
+
 	postRepo, err := repository.NewPostRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post repository", zap.Error(err))
