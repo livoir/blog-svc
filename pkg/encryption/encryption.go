@@ -34,6 +34,10 @@ func Encrypt(plainText string, key []byte) (string, error) {
 }
 
 func Decrypt(cipherTextBase64 string, key []byte) (string, error) {
+	if !isValidAESKey(key) {
+		return "", errors.New("invalid AES key length (must be 16, 24, or 32 bytes long)")
+	}
+
 	cipherText, err := base64.StdEncoding.DecodeString(cipherTextBase64)
 	if err != nil {
 		return "", err
