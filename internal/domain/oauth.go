@@ -16,6 +16,12 @@ type OAuthUserResponse struct {
 	RefreshToken string     `json:"refresh_token"`
 }
 
+type LoginCallbackRequest struct {
+	Code      string `json:"code"`
+	IpAddress string `json:"ip_address"`
+	UserAgent string `json:"user_agent"`
+}
+
 type OAuthRepository interface {
 	GetRedirectLoginUrl(ctx context.Context, state string) string
 	GetLoggedInUser(ctx context.Context, code string) (*OAuthUser, error)
@@ -23,5 +29,5 @@ type OAuthRepository interface {
 
 type OAuthUsecase interface {
 	GetRedirectLoginUrl(ctx context.Context, state string) string
-	LoginCallback(ctx context.Context, code string) (*OAuthUserResponse, error)
+	LoginCallback(ctx context.Context, request *LoginCallbackRequest) (*OAuthUserResponse, error)
 }

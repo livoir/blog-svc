@@ -66,8 +66,12 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		handleError(c, common.NewCustomError(http.StatusUnauthorized, "Redirect parameter is missing"))
 		return
 	}
-	code := c.Query("code")
-	user, err := h.OAuthUsecase.LoginCallback(c.Request.Context(), code)
+	request := &domain.LoginCallbackRequest{
+		Code:      c.Query("code"),
+		IpAddress: c.ClientIP(),
+		UserAgent: c.Request.UserAgent(),
+	}
+	user, err := h.OAuthUsecase.LoginCallback(c.Request.Context(), request)
 	if err != nil {
 		handleError(c, err)
 		return
