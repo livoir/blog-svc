@@ -74,6 +74,14 @@ func main() {
 
 	accessTokenExpiration := viper.GetDuration("auth.jwt.access_token_expiration")
 	refreshTokenExpiration := viper.GetDuration("auth.jwt.refresh_token_expiration")
+	if accessTokenExpiration <= 0 || refreshTokenExpiration <= 0 {
+		logger.Log.Error("Invalid token expiration duration")
+		return
+	}
+	if accessTokenExpiration >= refreshTokenExpiration {
+		logger.Log.Error("Access token expiration must be less than refresh token expiration")
+		return
+	}
 	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))

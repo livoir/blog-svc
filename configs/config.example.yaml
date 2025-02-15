@@ -1,14 +1,15 @@
 server:
   port: 8080
   allowed_redirects:
-    - "localhost:3000" # Add your frontend URL here
+    - "<YOUR_FRONTEND_URL>" # Add your frontend URL here
+    - "<ANOTHER_FRONTEND_URL>" # Add another frontend URL here
 
 db: # postgresql database configuration
-  host: localhost
-  port: 5432
-  user: postgres
-  password: postgres
-  database: db
+  host: <YOUR_DB_HOST>
+  port: <YOUR_DB_PORT>
+  user: <YOUR_DB_USER>
+  password: <YOUR_DB_PASSWORD>
+  database: <YOUR_DB_NAME>
 
 auth:
   jwt:
@@ -17,7 +18,7 @@ auth:
     access_token_expiration: 300 # Access token expiration time in seconds
     refresh_token_expiration: 604800 # Refresh token expiration time in seconds
   google:
-    client_id: "your_google_client_id" # Set your Google client ID here
-    client_secret: "your_google_client_secret" # Set your Google client secret here
-    redirect_url: "http://localhost:8080/auth/google/callback" # Your Backend Callback URL
-  encryption_key: "supersecretkey" # Your encryption key
+    client_id: "<YOUR_GOOGLE_CLIENT_ID>" # Set your Google client ID here
+    client_secret: "<YOUR_GOOGLE_CLIENT_SECRET>" # Set your Google client secret here
+    redirect_url: "<YOUR_BACKEND_CALLBACK_URL>" # Your Backend Callback URL
+  encryption_key: "<ENCRYPTION_KEY>" # Your encryption key
