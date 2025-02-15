@@ -71,7 +71,10 @@ func main() {
 		logger.Log.Error("Invalid encryption key length", zap.String("key", encryptionKey))
 		return
 	}
-	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey)
+
+	accessTokenExpiration := viper.GetDuration("auth.jwt.access_token_expiration")
+	refreshTokenExpiration := viper.GetDuration("auth.jwt.refresh_token_expiration")
+	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))
 		return

@@ -7,16 +7,19 @@ import (
 	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 type AuthHandler struct {
-	OAuthUsecase domain.OAuthUsecase
+	OAuthUsecase           domain.OAuthUsecase
+	AccessTokenExpiration  time.Duration
+	RefreshTokenExpiration time.Duration
 }
 
-func NewAuthHandler(r *gin.RouterGroup, usecase domain.OAuthUsecase) {
+func NewAuthHandler(r *gin.RouterGroup, usecase domain.OAuthUsecase, accessTokenExpiration, refreshTokenExpiration time.Duration) {
 	handler := &AuthHandler{
 		OAuthUsecase: usecase,
 	}
@@ -79,6 +82,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 	logger.Log.Info("Sucessfully Logged In", zap.Any("user", user))
 	c.SetCookie("state", "", -1, "/", "", true, true)
 	c.SetCookie("redirect", "", -1, "/", "", true, true)
-	c.SetCookie("access_token", user.AccessToken, 300, "/", "", true, true)
+	c.SetCookie("access_token", user.AccessToken, int(h.AccessTokenExpiration), "/", "", true, true)
+	c.SetCookie("refresh_token", user.RefreshToken, int(h.RefreshTokenExpiration), "/auth/token/refresh", "", true, true)
 	c.Redirect(http.StatusTemporaryRedirect, redirect)
 }

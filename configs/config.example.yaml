@@ -1,0 +1,23 @@
+server:
+  port: 8080
+  allowed_redirects:
+    - "localhost:3000" # Add your frontend URL here
+
+db: # postgresql database configuration
+  host: localhost
+  port: 5432
+  user: postgres
+  password: postgres
+  database: db
+
+auth:
+  jwt:
+    private_key: "configs/server.key" # Path to your private key -> generate with `make generate-cert`
+    public_key: "configs/server.pem" # Path to your public key -> generate with `make generate-cert`
+    access_token_expiration: 300 # Access token expiration time in seconds
+    refresh_token_expiration: 604800 # Refresh token expiration time in seconds
+  google:
+    client_id: "your_google_client_id" # Set your Google client ID here
+    client_secret: "your_google_client_secret" # Set your Google client secret here
+    redirect_url: "http://localhost:8080/auth/google/callback" # Your Backend Callback URL
+  encryption_key: "supersecretkey" # Your encryption key

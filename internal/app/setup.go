@@ -9,13 +9,14 @@ import (
 	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
 
-func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey, encryptionKey string) (*gin.Engine, error) {
+func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey, encryptionKey string, accessTokenExpiration time.Duration, refreshTokenExpiration time.Duration) (*gin.Engine, error) {
 	if db == nil {
 		logger.Log.Error("Database connection is nil")
 		return nil, common.NewCustomError(500, "Database connection is nil")
@@ -82,7 +83,7 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 		return nil, err
 	}
 
-	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo, administratorRepo, administratorSessionRepo, transactor, encryptionKey)
+	oauthUsecase, err := usecase.NewOauthUsecase(oauthRepo, tokenRepo, administratorRepo, administratorSessionRepo, transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err
@@ -101,7 +102,7 @@ func SetupRouter(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.Private
 	}
 	auth := r.Group("/auth")
 	{
-		http.NewAuthHandler(auth, oauthUsecase)
+		http.NewAuthHandler(auth, oauthUsecase, accessTokenExpiration, refreshTokenExpiration)
 	}
 
 	return r, nil

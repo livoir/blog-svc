@@ -92,7 +92,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
 	}
-	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey, encryptionKey)
+	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
@@ -100,7 +100,9 @@ func (suite *E2ETestSuite) SetupSuite() {
 
 func (suite *E2ETestSuite) TearDownSuite() {
 	if suite.db != nil {
-		suite.db.Close()
+		if err := suite.db.Close(); err != nil {
+			suite.T().Fatalf("failed to close database: %s", err)
+		}
 	}
 	if suite.pgContainer != nil {
 		if err := suite.pgContainer.Terminate(context.Background()); err != nil {
