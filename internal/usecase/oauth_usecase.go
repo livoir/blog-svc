@@ -13,19 +13,22 @@ import (
 )
 
 type OAuthUsecase struct {
-	oauthRepo                domain.OAuthRepository
-	tokenRepo                domain.TokenRepository
-	administratorRepo        domain.AdministratorRepository
-	administratorSessionRepo domain.AdministratorSessionRepository
-	txRepository             domain.Transactor
-	encryptionKey            string
+	oauthRepo                  domain.OAuthRepository
+	tokenRepo                  domain.TokenRepository
+	administratorRepo          domain.AdministratorRepository
+	administratorSessionRepo   domain.AdministratorSessionRepository
+	txRepository               domain.Transactor
+	encryptionKey              string
+	accessTokenExpirationTime  time.Duration
+	refreshTokenExpirationTime time.Duration
 }
 
 func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 	tokenRepo domain.TokenRepository,
 	administratorRepo domain.AdministratorRepository,
 	administratorSessionRepo domain.AdministratorSessionRepository,
-	txRepository domain.Transactor, encryptionKey string) (domain.OAuthUsecase, error) {
+	txRepository domain.Transactor, encryptionKey string,
+	accessTokenExpirationTime, refreshTokenExpirationTime time.Duration) (domain.OAuthUsecase, error) {
 	if oauthRepo == nil {
 		return nil, fmt.Errorf("oauth repository is nil")
 	}
@@ -43,12 +46,14 @@ func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 	}
 
 	return &OAuthUsecase{
-		oauthRepo:                oauthRepo,
-		tokenRepo:                tokenRepo,
-		administratorRepo:        administratorRepo,
-		administratorSessionRepo: administratorSessionRepo,
-		txRepository:             txRepository,
-		encryptionKey:            encryptionKey,
+		oauthRepo:                  oauthRepo,
+		tokenRepo:                  tokenRepo,
+		administratorRepo:          administratorRepo,
+		administratorSessionRepo:   administratorSessionRepo,
+		txRepository:               txRepository,
+		encryptionKey:              encryptionKey,
+		accessTokenExpirationTime:  accessTokenExpirationTime,
+		refreshTokenExpirationTime: refreshTokenExpirationTime,
 	}, nil
 }
 
@@ -87,7 +92,7 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 		return nil, common.ErrUserNotFound
 	}
 	now := time.Now()
-	expiredAt := now.Add(time.Minute * 10)
+	expiredAt := now.Add(uc.accessTokenExpirationTime)
 	accessToken, err := uc.tokenRepo.Generate(ctx, &domain.TokenData{
 		UserID:    oauthUser.ID,
 		Email:     oauthUser.Email,
@@ -97,7 +102,7 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 	if err != nil {
 		return nil, err
 	}
-	expiredAt = now.Add(time.Hour * 24 * 7)
+	expiredAt = now.Add(uc.refreshTokenExpirationTime)
 	refreshToken, err := uc.tokenRepo.Generate(ctx, &domain.TokenData{
 		UserID:    oauthUser.ID,
 		Email:     oauthUser.Email,

@@ -55,7 +55,6 @@ jobs:
     # Run create private and public key
     - name: Create private and public key
       run: |
-        mkdir configs
         make generate-cert
 
     # Run tests
