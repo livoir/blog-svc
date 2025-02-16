@@ -39,3 +39,22 @@ func (a *AdministratorSessionRepository) Insert(ctx context.Context, tx domain.T
 	}
 	return nil
 }
+
+func (a *AdministratorSessionRepository) Revoke(ctx context.Context, tx domain.Transaction, sessionID string) error {
+	sqlTx := tx.GetTx()
+	query := `UPDATE administrator_sessions SET revoked_at = NOW() WHERE id = $1`
+	res, err := sqlTx.ExecContext(ctx, query, sessionID)
+	if err != nil {
+		logger.Log.Error("Failed to revoke administrator session", zap.Error(err))
+		return err
+	}
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		logger.Log.Error("Failed to get rows affected", zap.Error(err))
+		return err
+	}
+	if rowsAffected == 0 {
+		return common.NewCustomError(http.StatusNotFound, "No administrator session found to revoke")
+	}
+	return nil
+}

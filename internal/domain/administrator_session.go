@@ -16,4 +16,5 @@ type AdministratorSession struct {
 
 type AdministratorSessionRepository interface {
 	Insert(ctx context.Context, tx Transaction, session *AdministratorSession) error
+	Revoke(ctx context.Context, tx Transaction, sessionID string) error
 }
