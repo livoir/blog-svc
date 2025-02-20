@@ -5,6 +5,7 @@ import (
 	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
 	"livoir-blog/pkg/logger"
+	"time"
 
 	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
@@ -54,8 +55,8 @@ func (c *CacheRepositoryRedis) Has(ctx context.Context, key string) (bool, error
 	return val > 0, nil
 }
 
-func (c *CacheRepositoryRedis) Set(ctx context.Context, key string, value interface{}) error {
-	err := c.Client.Set(ctx, key, value, 0).Err()
+func (c *CacheRepositoryRedis) Set(ctx context.Context, key string, value interface{}, expiration time.Duration) error {
+	err := c.Client.Set(ctx, key, value, expiration).Err()
 	if err != nil {
 		logger.Log.Error("Failed to set value in cache: ", zap.String("key", key), zap.Error(err))
 		return common.ErrInternalServerError
