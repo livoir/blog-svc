@@ -47,6 +47,14 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatus, w.Code)
+			if tc.expectedStatus == http.StatusTemporaryRedirect {
+				cookies := w.Result().Cookies()
+				assert.NotEmpty(t, cookies)
+				assert.Equal(t, "state", cookies[0].Name)
+				assert.Equal(t, "redirect", cookies[1].Name)
+			} else {
+				assert.Empty(t, w.Result().Cookies())
+			}
 		})
 	}
 }
