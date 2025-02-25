@@ -37,7 +37,8 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
-			req, _ := http.NewRequest("GET", "/auth/google/login", nil)
+			req, err := http.NewRequest("GET", "/auth/google/login", nil)
+			assert.NoError(t, err)
 			if tc.redirectUrl != "" {
 				q := req.URL.Query()
 				q.Add("redirect", tc.redirectUrl)
@@ -50,8 +51,17 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 			if tc.expectedStatus == http.StatusTemporaryRedirect {
 				cookies := w.Result().Cookies()
 				assert.NotEmpty(t, cookies)
-				assert.Equal(t, "state", cookies[0].Name)
-				assert.Equal(t, "redirect", cookies[1].Name)
+				var stateCookie, redirectCookie bool
+				for _, cookie := range cookies {
+					if cookie.Name == "state" {
+						stateCookie = true
+					}
+					if cookie.Name == "redirect" {
+						redirectCookie = true
+					}
+				}
+				assert.True(t, stateCookie)
+				assert.True(t, redirectCookie)
 			} else {
 				assert.Empty(t, w.Result().Cookies())
 			}
