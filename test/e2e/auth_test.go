@@ -68,3 +68,62 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 		})
 	}
 }
+
+func (suite *E2ETestSuite) TestGoogleCallback() {
+	t := suite.T()
+
+	testCases := []struct {
+		name           string
+		stateCookie    string
+		stateQuery     string
+		redirectCookie string
+		expectedStatus int
+	}{
+		{
+			name:           "state cookie is missing",
+			stateCookie:    "",
+			stateQuery:     "",
+			redirectCookie: "",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "state query is missing",
+			stateCookie:    "state",
+			stateQuery:     "",
+			redirectCookie: "",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "state cookie and query are different",
+			stateCookie:    "state",
+			stateQuery:     "invalid_state",
+			redirectCookie: "",
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:           "redirect cookie is missing",
+			stateCookie:    "state",
+			stateQuery:     "state",
+			redirectCookie: "",
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		req, err := http.NewRequest("GET", "/auth/google/callback", nil)
+		assert.NoError(t, err)
+
+		if tc.stateCookie != "" {
+			req.AddCookie(&http.Cookie{Name: "state", Value: tc.stateCookie})
+		}
+
+		if tc.redirectCookie != "" {
+			req.AddCookie(&http.Cookie{Name: "redirect", Value: tc.redirectCookie})
+		}
+
+		w := httptest.NewRecorder()
+		suite.router.ServeHTTP(w, req)
+
+		assert.Equal(t, tc.expectedStatus, w.Code)
+	}
+}
