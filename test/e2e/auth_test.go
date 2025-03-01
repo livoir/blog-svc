@@ -74,37 +74,32 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 
 	testCases := []struct {
 		name           string
-		stateCookie    string
-		stateQuery     string
-		redirectCookie string
+		cookies        map[string]string
+		queryParams    map[string]string
 		expectedStatus int
 	}{
 		{
 			name:           "state cookie is missing",
-			stateCookie:    "",
-			stateQuery:     "",
-			redirectCookie: "",
+			cookies:        map[string]string{},
+			queryParams:    map[string]string{},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "state query is missing",
-			stateCookie:    "state",
-			stateQuery:     "",
-			redirectCookie: "",
+			cookies:        map[string]string{"state": "state"},
+			queryParams:    map[string]string{},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "state cookie and query are different",
-			stateCookie:    "state",
-			stateQuery:     "invalid_state",
-			redirectCookie: "",
+			cookies:        map[string]string{"state": "state"},
+			queryParams:    map[string]string{"state": "invalid_state"},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "redirect cookie is missing",
-			stateCookie:    "state",
-			stateQuery:     "state",
-			redirectCookie: "",
+			cookies:        map[string]string{"state": "state"},
+			queryParams:    map[string]string{"state": "state"},
 			expectedStatus: http.StatusUnauthorized,
 		},
 	}
@@ -113,13 +108,15 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 		req, err := http.NewRequest("GET", "/auth/google/callback", nil)
 		assert.NoError(t, err)
 
-		if tc.stateCookie != "" {
-			req.AddCookie(&http.Cookie{Name: "state", Value: tc.stateCookie})
+		for key, value := range tc.cookies {
+			req.AddCookie(&http.Cookie{Name: key, Value: value})
 		}
 
-		if tc.redirectCookie != "" {
-			req.AddCookie(&http.Cookie{Name: "redirect", Value: tc.redirectCookie})
+		q := req.URL.Query()
+		for key, value := range tc.queryParams {
+			q.Add(key, value)
 		}
+		req.URL.RawQuery = q.Encode()
 
 		w := httptest.NewRecorder()
 		suite.router.ServeHTTP(w, req)
