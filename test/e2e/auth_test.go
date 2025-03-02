@@ -13,7 +13,7 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 	t := suite.T()
 	mockGetRedirectLoginUrl := func(state string) {
 		suite.mockOauthRepository.On("GetRedirectLoginUrl", mock.Anything, state).
-			Return("http://localhost:8080", nil).
+			Return("https://example-oauth.com", nil).
 			Once()
 	}
 	viper.Set("server.allowed_redirects", []string{"localhost:8081"})
