@@ -9,6 +9,8 @@ import (
 	"net/url"
 	"strings"
 
+	"slices"
+
 	"github.com/gin-gonic/gin"
 	"github.com/oklog/ulid/v2"
 	"github.com/spf13/viper"
@@ -67,10 +69,5 @@ func isValidRedirectUrl(redirect string) bool {
 	if err != nil {
 		return false
 	}
-	for _, allowed := range allowedRedirects {
-		if allowed == parsedUrl.Host {
-			return true
-		}
-	}
-	return false
+	return slices.Contains(allowedRedirects, parsedUrl.Host)
 }

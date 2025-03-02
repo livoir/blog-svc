@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"livoir-blog/internal/app"
+	"livoir-blog/mocks"
 	"livoir-blog/pkg/auth"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/jwt"
@@ -19,9 +20,10 @@ import (
 
 type E2ETestSuite struct {
 	suite.Suite
-	db          *sql.DB
-	router      *gin.Engine
-	pgContainer testcontainers.Container
+	db                  *sql.DB
+	router              *gin.Engine
+	pgContainer         testcontainers.Container
+	mockOauthRepository *mocks.OAuthRepository
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
@@ -84,7 +86,16 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
 	}
-	suite.router, err = app.SetupRouter(suite.db, oauthConfig, privateKey, publicKey, encryptionKey, time.Duration(60), time.Duration(120))
+
+	repoProvider, err := app.NewRepositoryProvider(suite.db, oauthConfig, privateKey, publicKey)
+	if err != nil {
+		suite.T().Fatalf("failed to initialize repository provider: %s", err)
+	}
+
+	suite.mockOauthRepository = mocks.NewOAuthRepository(suite.T())
+	repoProvider.SetOauthRepository(suite.mockOauthRepository)
+
+	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}

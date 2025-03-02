@@ -6,30 +6,41 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 	t := suite.T()
-
+	mockGetRedirectLoginUrl := func(state string) {
+		suite.mockOauthRepository.On("GetRedirectLoginUrl", mock.Anything, state).
+			Return("https://example-oauth.com", nil).
+			Once()
+	}
 	viper.Set("server.allowed_redirects", []string{"localhost:8081"})
 
 	testCases := []struct {
 		name           string
+		prepareMocks   func()
 		redirectUrl    string
 		expectedStatus int
 	}{
 		{
 			name:           "Google login without redirect",
+			prepareMocks:   func() {},
 			redirectUrl:    "",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
 			name:           "Google login with invalid redirect",
+			prepareMocks:   func() {},
 			redirectUrl:    "http://localhost:8080",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "Google login with valid redirect",
+			name: "Google login with valid redirect",
+			prepareMocks: func() {
+				mockGetRedirectLoginUrl(mock.Anything)
+			},
 			redirectUrl:    "http://localhost:8081",
 			expectedStatus: http.StatusTemporaryRedirect,
 		},
@@ -37,6 +48,7 @@ func (suite *E2ETestSuite) TestGoogleLoginRedirect() {
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
+			tc.prepareMocks()
 			req, err := http.NewRequest("GET", "/auth/google/login", nil)
 			assert.NoError(t, err)
 			if tc.redirectUrl != "" {
