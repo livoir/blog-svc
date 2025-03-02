@@ -82,7 +82,14 @@ func main() {
 		logger.Log.Error("Access token expiration must be less than refresh token expiration")
 		return
 	}
-	router, err := app.SetupRouter(db, oauthConfig, privateKey, publicKey, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
+
+	repoProvider, err := app.NewRepositoryProvider(db, oauthConfig, privateKey, publicKey)
+	if err != nil {
+		logger.Log.Error("Failed to initialize repository provider", zap.Error(err))
+		return
+	}
+
+	router, err := app.SetupRouter(db, repoProvider, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to setup router", zap.Error(err))
 		return

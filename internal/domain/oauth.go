@@ -22,6 +22,7 @@ type LoginCallbackRequest struct {
 	UserAgent string `json:"user_agent"`
 }
 
+//go:generate mockery --name=OAuthRepository --output=../../mocks
 type OAuthRepository interface {
 	GetRedirectLoginUrl(ctx context.Context, state string) string
 	GetLoggedInUser(ctx context.Context, code string) (*OAuthUser, error)
