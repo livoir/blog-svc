@@ -117,22 +117,24 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 	}
 
 	for _, tc := range testCases {
-		req, err := http.NewRequest("GET", "/auth/google/callback", nil)
-		assert.NoError(t, err)
+		suite.Run(tc.name, func() {
+			req, err := http.NewRequest("GET", "/auth/google/callback", nil)
+			assert.NoError(t, err)
 
-		for key, value := range tc.cookies {
-			req.AddCookie(&http.Cookie{Name: key, Value: value})
-		}
+			for key, value := range tc.cookies {
+				req.AddCookie(&http.Cookie{Name: key, Value: value})
+			}
 
-		q := req.URL.Query()
-		for key, value := range tc.queryParams {
-			q.Add(key, value)
-		}
-		req.URL.RawQuery = q.Encode()
+			q := req.URL.Query()
+			for key, value := range tc.queryParams {
+				q.Add(key, value)
+			}
+			req.URL.RawQuery = q.Encode()
 
-		w := httptest.NewRecorder()
-		suite.router.ServeHTTP(w, req)
+			w := httptest.NewRecorder()
+			suite.router.ServeHTTP(w, req)
 
-		assert.Equal(t, tc.expectedStatus, w.Code)
+			assert.Equal(t, tc.expectedStatus, w.Code)
+		})
 	}
 }
