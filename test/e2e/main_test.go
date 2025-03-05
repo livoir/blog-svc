@@ -94,6 +94,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 	}
 	suite.mockOauthRepository = mocks.NewOAuthRepository(suite.T())
 	repoProvider.SetOauthRepository(suite.mockOauthRepository)
+	suite.repoProvider = repoProvider
 
 	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
