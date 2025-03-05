@@ -13,14 +13,14 @@ import (
 )
 
 type RepositoryProvider struct {
-	transactor                     domain.Transactor
-	oauthRepository                domain.OAuthRepository
-	tokenRepository                domain.TokenRepository
-	administratorRepository        domain.AdministratorRepository
-	administratorSessionRepository domain.AdministratorSessionRepository
-	postRepository                 domain.PostRepository
-	postVersionRepository          domain.PostVersionRepository
-	categoryRepository             domain.CategoryRepository
+	Transactor                     domain.Transactor
+	OAuthRepository                domain.OAuthRepository
+	TokenRepository                domain.TokenRepository
+	AdministratorRepository        domain.AdministratorRepository
+	AdministratorSessionRepository domain.AdministratorSessionRepository
+	PostRepository                 domain.PostRepository
+	PostVersionRepository          domain.PostVersionRepository
+	CategoryRepository             domain.CategoryRepository
 }
 
 func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*RepositoryProvider, error) {
@@ -78,5 +78,5 @@ func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *r
 }
 
 func (rp *RepositoryProvider) SetOauthRepository(oauthRepo domain.OAuthRepository) {
-	rp.oauthRepository = oauthRepo
+	rp.OAuthRepository = oauthRepo
 }
