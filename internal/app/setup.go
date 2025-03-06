@@ -27,18 +27,18 @@ func SetupRouter(db *sql.DB, repoProvider *RepositoryProvider, encryptionKey str
 		return nil, common.NewCustomError(500, "Encryption key is required")
 	}
 
-	postUsecase, err := usecase.NewPostUsecase(repoProvider.postRepository, repoProvider.postVersionRepository, repoProvider.transactor)
+	postUsecase, err := usecase.NewPostUsecase(repoProvider.PostRepository, repoProvider.PostVersionRepository, repoProvider.Transactor)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post usecase", zap.Error(err))
 		return nil, err
 	}
-	categoryUsecase, err := usecase.NewCategoryUsecase(repoProvider.transactor, repoProvider.categoryRepository, repoProvider.postVersionRepository)
+	categoryUsecase, err := usecase.NewCategoryUsecase(repoProvider.Transactor, repoProvider.CategoryRepository, repoProvider.PostVersionRepository)
 	if err != nil {
 		logger.Log.Error("Failed to initialize category usecase", zap.Error(err))
 		return nil, err
 	}
 
-	oauthUsecase, err := usecase.NewOauthUsecase(repoProvider.oauthRepository, repoProvider.tokenRepository, repoProvider.administratorRepository, repoProvider.administratorSessionRepository, repoProvider.transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
+	oauthUsecase, err := usecase.NewOauthUsecase(repoProvider.OAuthRepository, repoProvider.TokenRepository, repoProvider.AdministratorRepository, repoProvider.AdministratorSessionRepository, repoProvider.Transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err

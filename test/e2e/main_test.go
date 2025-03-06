@@ -24,6 +24,7 @@ type E2ETestSuite struct {
 	router              *gin.Engine
 	pgContainer         testcontainers.Container
 	mockOauthRepository *mocks.OAuthRepository
+	repoProvider        *app.RepositoryProvider
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
@@ -91,9 +92,9 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("failed to initialize repository provider: %s", err)
 	}
-
 	suite.mockOauthRepository = mocks.NewOAuthRepository(suite.T())
 	repoProvider.SetOauthRepository(suite.mockOauthRepository)
+	suite.repoProvider = repoProvider
 
 	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
