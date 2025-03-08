@@ -43,3 +43,24 @@ func (r *AdministratorRepositoryImpl) FindByEmail(ctx context.Context, email str
 
 	return &admin, nil
 }
+
+func (r *AdministratorRepositoryImpl) Insert(ctx context.Context, administrator *domain.Administrator) error {
+	query := `INSERT INTO administrators (id, full_name, email, password_hash, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
+	res, err := r.db.ExecContext(ctx, query, administrator.ID, administrator.FullName, administrator.Email, administrator.PasswordHash, administrator.CreatedAt, administrator.UpdatedAt)
+	if err != nil {
+		logger.Log.Error("failed to insert administrator", zap.Error(err), zap.String("email", administrator.Email))
+		return err
+	}
+
+	rowsAffected, err := res.RowsAffected()
+	if err != nil {
+		logger.Log.Error("failed to get rows affected", zap.Error(err))
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return common.NewCustomError(http.StatusInternalServerError, "no rows affected")
+	}
+
+	return nil
+}
