@@ -46,6 +46,9 @@ func (r *AdministratorRepositoryImpl) FindByEmail(ctx context.Context, email str
 }
 
 func (r *AdministratorRepositoryImpl) Insert(ctx context.Context, administrator *domain.Administrator) error {
+	if administrator == nil {
+		return common.NewCustomError(http.StatusBadRequest, "administrator data is nil")
+	}
 	query := `INSERT INTO administrators (id, full_name, email, password_hash, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6)`
 	res, err := r.db.ExecContext(ctx, query, administrator.ID, administrator.FullName, administrator.Email, administrator.PasswordHash, administrator.CreatedAt, administrator.UpdatedAt)
 	if err != nil {
