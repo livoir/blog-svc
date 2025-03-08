@@ -16,4 +16,5 @@ type Administrator struct {
 
 type AdministratorRepository interface {
 	FindByEmail(ctx context.Context, email string) (*Administrator, error)
+	Insert(ctx context.Context, administrator *Administrator) error
 }
