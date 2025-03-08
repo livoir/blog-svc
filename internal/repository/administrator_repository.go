@@ -8,6 +8,7 @@ import (
 	"livoir-blog/pkg/logger"
 	"net/http"
 
+	"github.com/lib/pq"
 	"go.uber.org/zap"
 )
 
@@ -54,6 +55,9 @@ func (r *AdministratorRepositoryImpl) Insert(ctx context.Context, administrator 
 
 	rowsAffected, err := res.RowsAffected()
 	if err != nil {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Code == "23505" { // PostgreSQL unique violation code
+			return common.NewCustomError(http.StatusConflict, "administrator with this email already exists")
+		}
 		logger.Log.Error("failed to get rows affected", zap.Error(err))
 		return err
 	}
