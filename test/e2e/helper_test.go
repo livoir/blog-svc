@@ -5,11 +5,11 @@ import (
 	"livoir-blog/internal/domain"
 )
 
-func (suite *E2ETestSuite) insertAdmin() {
+func (suite *E2ETestSuite) insertAdmin(fullName, email string) {
 	err := suite.repoProvider.AdministratorRepository.Insert(context.Background(), &domain.Administrator{
-		FullName:     "admin",
-		Email:        "admin@example.com",
-		PasswordHash: "hashedPassword",
+		FullName:     fullName,
+		Email:        email,
+		PasswordHash: "hashed_password",
 	})
 	suite.Assert().Nil(err)
 }
