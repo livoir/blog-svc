@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"livoir-blog/pkg/common"
 	"net/http"
 	"net/http/httptest"
 
@@ -88,36 +89,51 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 		name           string
 		cookies        map[string]string
 		queryParams    map[string]string
+		mock           func()
 		expectedStatus int
 	}{
 		{
 			name:           "state cookie is missing",
 			cookies:        map[string]string{},
 			queryParams:    map[string]string{},
+			mock:           func() {},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "state query is missing",
 			cookies:        map[string]string{"state": "state"},
 			queryParams:    map[string]string{},
+			mock:           func() {},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "state cookie and query are different",
 			cookies:        map[string]string{"state": "state"},
 			queryParams:    map[string]string{"state": "invalid_state"},
+			mock:           func() {},
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
 			name:           "redirect cookie is missing",
 			cookies:        map[string]string{"state": "state"},
 			queryParams:    map[string]string{"state": "state"},
+			mock:           func() {},
 			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:        "email doesnt exists",
+			cookies:     map[string]string{"state": "state", "redirect": "http://localhost:8081"},
+			queryParams: map[string]string{"state": "state", "code": "code"},
+			mock: func() {
+				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(nil, common.ErrUserNotFound).Once()
+			},
+			expectedStatus: http.StatusNotFound,
 		},
 	}
 
 	for _, tc := range testCases {
 		suite.Run(tc.name, func() {
+			tc.mock()
 			req, err := http.NewRequest("GET", "/auth/google/callback", nil)
 			assert.NoError(t, err)
 
