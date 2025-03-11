@@ -100,6 +100,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
+	suite.insertAdmin("test admin", "admin@example.com")
 }
 
 func (suite *E2ETestSuite) TearDownSuite() {
