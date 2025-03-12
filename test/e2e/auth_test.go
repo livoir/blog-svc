@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"livoir-blog/internal/domain"
 	"livoir-blog/pkg/common"
 	"net/http"
 	"net/http/httptest"
@@ -86,11 +87,12 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 	t := suite.T()
 
 	testCases := []struct {
-		name           string
-		cookies        map[string]string
-		queryParams    map[string]string
-		mock           func()
-		expectedStatus int
+		name            string
+		cookies         map[string]string
+		queryParams     map[string]string
+		mock            func()
+		expectedStatus  int
+		expectedCookies []string
 	}{
 		{
 			name:           "state cookie is missing",
@@ -121,13 +123,44 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 			expectedStatus: http.StatusUnauthorized,
 		},
 		{
-			name:        "email doesnt exists",
+			name:        "failed to get logged in user",
 			cookies:     map[string]string{"state": "state", "redirect": "http://localhost:8081"},
 			queryParams: map[string]string{"state": "state", "code": "code"},
 			mock: func() {
-				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(nil, common.ErrUserNotFound).Once()
+				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(nil, common.NewCustomError(http.StatusInternalServerError, "failed to get logged in user")).Once()
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
+		{
+			name:        "email doesn't exist",
+			cookies:     map[string]string{"state": "state", "redirect": "http://localhost:8081"},
+			queryParams: map[string]string{"state": "state", "code": "code"},
+			mock: func() {
+				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(&domain.OAuthUser{
+					ID:            "id",
+					Email:         "notexists@example.com",
+					VerifiedEmail: true,
+					Name:          "name",
+					Picture:       "picture",
+				}, nil).Once()
 			},
 			expectedStatus: http.StatusNotFound,
+		},
+		{
+			name:        "success",
+			cookies:     map[string]string{"state": "state", "redirect": "http://localhost:8081"},
+			queryParams: map[string]string{"state": "state", "code": "code"},
+			mock: func() {
+				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(&domain.OAuthUser{
+					ID:            "id",
+					Email:         "admin@example.com",
+					VerifiedEmail: true,
+					Name:          "name",
+					Picture:       "picture",
+				}, nil).Once()
+			},
+			expectedStatus:  http.StatusTemporaryRedirect,
+			expectedCookies: []string{"access_token", "refresh_token", "state", "redirect"},
 		},
 	}
 
@@ -151,6 +184,9 @@ func (suite *E2ETestSuite) TestGoogleCallback() {
 			suite.router.ServeHTTP(w, req)
 
 			assert.Equal(t, tc.expectedStatus, w.Code)
+			for _, cookie := range w.Result().Cookies() {
+				assert.Contains(t, tc.expectedCookies, cookie.Name)
+			}
 		})
 	}
 }
