@@ -25,6 +25,7 @@ type E2ETestSuite struct {
 	pgContainer         testcontainers.Container
 	mockOauthRepository *mocks.OAuthRepository
 	repoProvider        *app.RepositoryProvider
+	accessToken         string
 }
 
 func (suite *E2ETestSuite) SetupSuite() {
@@ -95,12 +96,13 @@ func (suite *E2ETestSuite) SetupSuite() {
 	suite.mockOauthRepository = mocks.NewOAuthRepository(suite.T())
 	repoProvider.SetOauthRepository(suite.mockOauthRepository)
 	suite.repoProvider = repoProvider
-
 	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
 	suite.insertAdmin("test admin", "admin@example.com")
+	suite.accessToken, err = suite.getAccessToken("admin@example.com")
+	suite.Assert().Nil(err)
 }
 
 func (suite *E2ETestSuite) TearDownSuite() {
