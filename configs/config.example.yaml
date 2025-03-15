@@ -21,4 +21,8 @@ auth:
     client_id: "<YOUR_GOOGLE_CLIENT_ID>" # Set your Google client ID here
     client_secret: "<YOUR_GOOGLE_CLIENT_SECRET>" # Set your Google client secret here
     redirect_url: "<YOUR_BACKEND_CALLBACK_URL>" # Your Backend Callback URL
+  discord:
+    client_id: "<YOUR_DISCORD_CLIENT_ID>"
+    client_secret: "<YOUR_DISCORD_CLIENT_SECRET>"
+    redirect_url: "<YOUR_DISCORD_REDIRECT_URL>"
   encryption_key: "<ENCRYPTION_KEY>" # Your encryption key
