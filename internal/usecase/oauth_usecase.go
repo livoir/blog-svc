@@ -84,7 +84,6 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 	if err != nil {
 		return nil, err
 	}
-	fmt.Println(oauthUser)
 	admin, err := uc.administratorRepo.FindByEmail(ctx, oauthUser.Email)
 	if err != nil {
 		return nil, err
