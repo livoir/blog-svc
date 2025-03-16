@@ -83,18 +83,20 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err := database.RunMigrations(suite.db, migrationPath); err != nil {
 		suite.T().Fatalf("failed to run migrations: %s", err)
 	}
-	oauthConfig := auth.NewGoogleOauthConfig()
+	oauthGoogleConfig := auth.NewGoogleOauthConfig()
+	oauthDiscordConfig := auth.NewDiscordOauthConfig()
 	privateKey, publicKey, err := jwt.NewJWT("../../configs/server.key", "../../configs/server.pem")
 	if err != nil {
 		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
 	}
 
-	repoProvider, err := app.NewRepositoryProvider(suite.db, oauthConfig, privateKey, publicKey)
+	repoProvider, err := app.NewRepositoryProvider(suite.db, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
 	if err != nil {
 		suite.T().Fatalf("failed to initialize repository provider: %s", err)
 	}
 	suite.mockOauthRepository = mocks.NewOAuthRepository(suite.T())
-	repoProvider.SetOauthRepository(suite.mockOauthRepository)
+
+	repoProvider.SetOauthRepositories(suite.mockOauthRepository, suite.mockOauthRepository)
 	suite.repoProvider = repoProvider
 	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
 	if err != nil {
