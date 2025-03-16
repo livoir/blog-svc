@@ -8,6 +8,7 @@ type OAuthUser struct {
 	VerifiedEmail bool   `json:"verified_email"`
 	Name          string `json:"name"`
 	Picture       string `json:"picture"`
+	Username      string `json:"username"`
 }
 
 type OAuthUserResponse struct {

@@ -14,7 +14,8 @@ import (
 
 type RepositoryProvider struct {
 	Transactor                     domain.Transactor
-	OAuthRepository                domain.OAuthRepository
+	OAuthGoogleRepository          domain.OAuthRepository
+	OAuthDiscordRepository         domain.OAuthRepository
 	TokenRepository                domain.TokenRepository
 	AdministratorRepository        domain.AdministratorRepository
 	AdministratorSessionRepository domain.AdministratorSessionRepository
@@ -23,7 +24,7 @@ type RepositoryProvider struct {
 	CategoryRepository             domain.CategoryRepository
 }
 
-func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*RepositoryProvider, error) {
+func NewRepositoryProvider(db *sql.DB, oauthGoogleConfig, oauthDiscordConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*RepositoryProvider, error) {
 	postRepo, err := repository.NewPostRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post repository", zap.Error(err))
@@ -34,7 +35,12 @@ func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *r
 		logger.Log.Error("Failed to initialize post version repository", zap.Error(err))
 		return nil, err
 	}
-	oauthRepo, err := repository.NewOauthGoogleRepository(oauthConfig)
+	oauthGoogleRepo, err := repository.NewOauthGoogleRepository(oauthGoogleConfig)
+	if err != nil {
+		logger.Log.Error("Failed to initialize oauth repository", zap.Error(err))
+		return nil, err
+	}
+	oauthDiscordRepo, err := repository.NewOauthDiscordRepository(oauthDiscordConfig)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth repository", zap.Error(err))
 		return nil, err
@@ -67,7 +73,8 @@ func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *r
 
 	return &RepositoryProvider{
 		transactor,
-		oauthRepo,
+		oauthGoogleRepo,
+		oauthDiscordRepo,
 		tokenRepo,
 		administratorRepo,
 		administratorSessionRepo,
@@ -77,6 +84,7 @@ func NewRepositoryProvider(db *sql.DB, oauthConfig *oauth2.Config, privateKey *r
 	}, nil
 }
 
-func (rp *RepositoryProvider) SetOauthRepository(oauthRepo domain.OAuthRepository) {
-	rp.OAuthRepository = oauthRepo
+func (rp *RepositoryProvider) SetOauthRepositories(oauthGoogleRepo, oauthDiscordRepo domain.OAuthRepository) {
+	rp.OAuthGoogleRepository = oauthGoogleRepo
+	rp.OAuthDiscordRepository = oauthDiscordRepo
 }

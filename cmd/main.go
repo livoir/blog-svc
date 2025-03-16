@@ -60,7 +60,8 @@ func main() {
 	}
 
 	// Initialize OAuth2
-	oauthConfig := auth.NewGoogleOauthConfig()
+	oauthGoogleConfig := auth.NewGoogleOauthConfig()
+	oauthDiscordConfig := auth.NewDiscordOauthConfig()
 	privateKey, publicKey, err := jwt.NewJWT(viper.GetString("auth.jwt.private_key"), viper.GetString("auth.jwt.public_key"))
 	if err != nil {
 		logger.Log.Error("Failed to initialize JWT keys", zap.Error(err))
@@ -83,7 +84,7 @@ func main() {
 		return
 	}
 
-	repoProvider, err := app.NewRepositoryProvider(db, oauthConfig, privateKey, publicKey)
+	repoProvider, err := app.NewRepositoryProvider(db, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
 	if err != nil {
 		logger.Log.Error("Failed to initialize repository provider", zap.Error(err))
 		return
