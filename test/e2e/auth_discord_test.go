@@ -6,15 +6,16 @@ import (
 
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 )
 
 func (suite *E2ETestSuite) TestDiscordLoginRedirect() {
 	t := suite.T()
-	// mockGetRedirectUrl := func(state string) {
-	// 	suite.mockOauthRepository.On("GetRedirectLoginUrl", mock.Anything, state).
-	// 		Return("https://example-oauth.com", nil).
-	// 		Once()
-	// }
+	mockGetRedirectLoginUrl := func(state string) {
+		suite.mockOauthRepository.On("GetRedirectLoginUrl", mock.Anything, state).
+			Return("https://example-oauth.com", nil).
+			Once()
+	}
 	viper.Set("server.allowed_redirects", []string{"localhost:8081"})
 
 	testCases := []struct {
@@ -28,6 +29,20 @@ func (suite *E2ETestSuite) TestDiscordLoginRedirect() {
 			prepareMocks:   func() {},
 			redirectUrl:    "",
 			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name:           "Google login with invalid redirect",
+			prepareMocks:   func() {},
+			redirectUrl:    "http://localhost:8080",
+			expectedStatus: http.StatusBadRequest,
+		},
+		{
+			name: "Google login with valid redirect",
+			prepareMocks: func() {
+				mockGetRedirectLoginUrl(mock.Anything)
+			},
+			redirectUrl:    "http://localhost:8081",
+			expectedStatus: http.StatusTemporaryRedirect,
 		},
 	}
 
