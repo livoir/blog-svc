@@ -1,2 +1,67 @@
 package e2e
 
+import (
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/spf13/viper"
+	"github.com/stretchr/testify/assert"
+)
+
+func (suite *E2ETestSuite) TestDiscordLoginRedirect() {
+	t := suite.T()
+	// mockGetRedirectUrl := func(state string) {
+	// 	suite.mockOauthRepository.On("GetRedirectLoginUrl", mock.Anything, state).
+	// 		Return("https://example-oauth.com", nil).
+	// 		Once()
+	// }
+	viper.Set("server.allowed_redirects", []string{"localhost:8081"})
+
+	testCases := []struct {
+		name           string
+		prepareMocks   func()
+		redirectUrl    string
+		expectedStatus int
+	}{
+		{
+			name:           "Discord login without redirect",
+			prepareMocks:   func() {},
+			redirectUrl:    "",
+			expectedStatus: http.StatusBadRequest,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			tc.prepareMocks()
+			req, err := http.NewRequest("GET", "/auth/discord/login", nil)
+			assert.NoError(t, err)
+			if tc.redirectUrl != "" {
+				q := req.URL.Query()
+				q.Add("redirect", tc.redirectUrl)
+				req.URL.RawQuery = q.Encode()
+			}
+			w := httptest.NewRecorder()
+			suite.router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+			if tc.expectedStatus == http.StatusTemporaryRedirect {
+				cookies := w.Result().Cookies()
+				assert.NotEmpty(t, cookies)
+				var stateCookie, redirectCookie bool
+				for _, cookie := range cookies {
+					if cookie.Name == "state" {
+						stateCookie = true
+					}
+					if cookie.Name == "redirect" {
+						redirectCookie = true
+					}
+				}
+				assert.True(t, stateCookie)
+				assert.True(t, redirectCookie)
+			} else {
+				assert.Empty(t, w.Result().Cookies())
+			}
+		})
+	}
+}
