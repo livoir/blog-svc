@@ -31,13 +31,13 @@ func (suite *E2ETestSuite) TestDiscordLoginRedirect() {
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name:           "Google login with invalid redirect",
+			name:           "Discord login with invalid redirect",
 			prepareMocks:   func() {},
 			redirectUrl:    "http://localhost:8080",
 			expectedStatus: http.StatusBadRequest,
 		},
 		{
-			name: "Google login with valid redirect",
+			name: "Discord login with valid redirect",
 			prepareMocks: func() {
 				mockGetRedirectLoginUrl(mock.Anything)
 			},
