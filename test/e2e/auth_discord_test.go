@@ -80,3 +80,50 @@ func (suite *E2ETestSuite) TestDiscordLoginRedirect() {
 		})
 	}
 }
+
+func (suite *E2ETestSuite) TestDiscordCallback() {
+	t := suite.T()
+
+	testCases := []struct {
+		name            string
+		prepareMocks    func()
+		cookies         map[string]string
+		queryParams     map[string]string
+		expectedCookies []string
+		expectedStatus  int
+	}{
+		{
+			name:           "Discord callback without state cookie",
+			prepareMocks:   func() {},
+			cookies:        map[string]string{},
+			queryParams:    map[string]string{},
+			expectedStatus: http.StatusUnauthorized,
+		},
+	}
+
+	for _, tc := range testCases {
+		suite.Run(tc.name, func() {
+			tc.prepareMocks()
+			req, err := http.NewRequest("GET", "/auth/discord/callback", nil)
+			assert.NoError(t, err)
+
+			for key, value := range tc.cookies {
+				req.AddCookie(&http.Cookie{Name: key, Value: value})
+			}
+
+			q := req.URL.Query()
+			for key, value := range tc.queryParams {
+				q.Add(key, value)
+			}
+			req.URL.RawQuery = q.Encode()
+			w := httptest.NewRecorder()
+			suite.router.ServeHTTP(w, req)
+
+			assert.Equal(t, tc.expectedStatus, w.Code)
+			for _, cookie := range w.Result().Cookies() {
+				assert.Contains(t, tc.expectedCookies, cookie.Name)
+
+			}
+		})
+	}
+}
