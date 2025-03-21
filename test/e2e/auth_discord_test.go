@@ -99,6 +99,26 @@ func (suite *E2ETestSuite) TestDiscordCallback() {
 			queryParams:    map[string]string{},
 			expectedStatus: http.StatusUnauthorized,
 		},
+		{
+			name:         "Discord callback with invalid state cookie",
+			prepareMocks: func() {},
+			cookies: map[string]string{
+				"state": "state",
+			},
+			queryParams: map[string]string{
+				"state": "invalid",
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:         "Discord callback without state query",
+			prepareMocks: func() {},
+			cookies: map[string]string{
+				"state": "state",
+			},
+			queryParams:    map[string]string{},
+			expectedStatus: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
