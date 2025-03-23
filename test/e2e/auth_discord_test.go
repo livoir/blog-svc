@@ -119,6 +119,17 @@ func (suite *E2ETestSuite) TestDiscordCallback() {
 			queryParams:    map[string]string{},
 			expectedStatus: http.StatusUnauthorized,
 		},
+		{
+			name:         "redirect cookie is missing",
+			prepareMocks: func() {},
+			cookies: map[string]string{
+				"state": "state",
+			},
+			queryParams: map[string]string{
+				"state": "state",
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
 	}
 
 	for _, tc := range testCases {
