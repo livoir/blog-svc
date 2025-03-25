@@ -1,6 +1,7 @@
 package e2e
 
 import (
+	"livoir-blog/pkg/common"
 	"net/http"
 	"net/http/httptest"
 
@@ -119,6 +120,26 @@ func (suite *E2ETestSuite) TestDiscordCallback() {
 			queryParams:    map[string]string{},
 			expectedStatus: http.StatusUnauthorized,
 		},
+		{
+			name:         "redirect cookie is missing",
+			prepareMocks: func() {},
+			cookies: map[string]string{
+				"state": "state",
+			},
+			queryParams: map[string]string{
+				"state": "state",
+			},
+			expectedStatus: http.StatusUnauthorized,
+		},
+		{
+			name:        "failed to get user info",
+			cookies:     map[string]string{"state": "state", "redirect": "http://localhost:8081"},
+			queryParams: map[string]string{"state": "state", "code": "code"},
+			prepareMocks: func() {
+				suite.mockOauthRepository.On("GetLoggedInUser", mock.Anything, "code").Return(nil, common.NewCustomError(http.StatusInternalServerError, "failed to get logged in user")).Once()
+			},
+			expectedStatus: http.StatusInternalServerError,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -142,7 +163,6 @@ func (suite *E2ETestSuite) TestDiscordCallback() {
 			assert.Equal(t, tc.expectedStatus, w.Code)
 			for _, cookie := range w.Result().Cookies() {
 				assert.Contains(t, tc.expectedCookies, cookie.Name)
-
 			}
 		})
 	}
