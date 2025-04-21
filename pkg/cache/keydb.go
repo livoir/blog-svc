@@ -7,14 +7,14 @@ import (
 	"github.com/redis/go-redis/v9"
 )
 
-func NewKeyDBClient(address, username, password string, db int) (*redis.Client, error) {
+func NewKeyDBClient(ctx context.Context, address, username, password string, db int) (*redis.Client, error) {
 	client := redis.NewClient(&redis.Options{
 		Addr:     address,
 		Password: password,
 		DB:       db,
 		Username: username,
 	})
-	if _, err := client.Ping(context.Background()).Result(); err != nil {
+	if _, err := client.Ping(ctx).Result(); err != nil {
 		return nil, errors.New("failed to connect to KeyDB: " + err.Error())
 	}
 	return client, nil
