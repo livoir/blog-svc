@@ -11,6 +11,12 @@ db: # postgresql database configuration
   password: <YOUR_DB_PASSWORD>
   database: <YOUR_DB_NAME>
 
+cache:
+  address: <YOUR_CACHE_HOST>:<YOUR_CACHE_PORT>
+  username: <YOUR_CACHE_USERNAME> # Optional, if your cache server requires authentication
+  password: <YOUR_CACHE_PASSWORD> # Optional, if your cache server requires authentication
+  db: 0
+
 auth:
   jwt:
     private_key: "configs/server.key" # Path to your private key -> generate with `make generate-cert`
