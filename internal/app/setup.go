@@ -38,13 +38,13 @@ func SetupRouter(db *sql.DB, repoProvider *RepositoryProvider, encryptionKey str
 		return nil, err
 	}
 
-	oauthGoogleUsecase, err := usecase.NewOauthUsecase(repoProvider.OAuthGoogleRepository, repoProvider.TokenRepository, repoProvider.AdministratorRepository, repoProvider.AdministratorSessionRepository, repoProvider.Transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
+	oauthGoogleUsecase, err := usecase.NewOauthUsecase(repoProvider.OAuthGoogleRepository, repoProvider.TokenRepository, repoProvider.AdministratorRepository, repoProvider.AdministratorSessionRepository, repoProvider.CacheRepository, repoProvider.Transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err
 	}
 
-	oauthDiscordUsecase, err := usecase.NewOauthUsecase(repoProvider.OAuthDiscordRepository, repoProvider.TokenRepository, repoProvider.AdministratorRepository, repoProvider.AdministratorSessionRepository, repoProvider.Transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
+	oauthDiscordUsecase, err := usecase.NewOauthUsecase(repoProvider.OAuthDiscordRepository, repoProvider.TokenRepository, repoProvider.AdministratorRepository, repoProvider.AdministratorSessionRepository, repoProvider.CacheRepository, repoProvider.Transactor, encryptionKey, accessTokenExpiration, refreshTokenExpiration)
 	if err != nil {
 		logger.Log.Error("Failed to initialize oauth usecase", zap.Error(err))
 		return nil, err

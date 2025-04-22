@@ -15,8 +15,12 @@ type CacheRepositoryRedis struct {
 	Client *redis.Client
 }
 
-func NewCacheRepositoryRedis(client *redis.Client) domain.CacheRepository {
-	return &CacheRepositoryRedis{Client: client}
+func NewCacheRepositoryRedis(client *redis.Client) (domain.CacheRepository, error) {
+	if client == nil {
+		logger.Log.Error("Redis client is nil")
+		return nil, common.ErrInternalServerError
+	}
+	return &CacheRepositoryRedis{Client: client}, nil
 }
 
 func (c *CacheRepositoryRedis) Clear(ctx context.Context) error {
