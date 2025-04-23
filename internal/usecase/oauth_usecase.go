@@ -17,6 +17,7 @@ type OAuthUsecase struct {
 	tokenRepo                  domain.TokenRepository
 	administratorRepo          domain.AdministratorRepository
 	administratorSessionRepo   domain.AdministratorSessionRepository
+	cacheRepository            domain.CacheRepository
 	txRepository               domain.Transactor
 	encryptionKey              string
 	accessTokenExpirationTime  time.Duration
@@ -27,6 +28,7 @@ func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 	tokenRepo domain.TokenRepository,
 	administratorRepo domain.AdministratorRepository,
 	administratorSessionRepo domain.AdministratorSessionRepository,
+	cacheRepository domain.CacheRepository,
 	txRepository domain.Transactor, encryptionKey string,
 	accessTokenExpirationTime, refreshTokenExpirationTime time.Duration) (domain.OAuthUsecase, error) {
 	if oauthRepo == nil {
@@ -54,6 +56,7 @@ func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 		encryptionKey:              encryptionKey,
 		accessTokenExpirationTime:  accessTokenExpirationTime,
 		refreshTokenExpirationTime: refreshTokenExpirationTime,
+		cacheRepository:            cacheRepository,
 	}, nil
 }
 
@@ -113,6 +116,7 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 		return nil, err
 	}
 
+	encryptedAccessToken, err := encryption.Encrypt(accessToken, []byte(uc.encryptionKey))
 	encryptedRefreshToken, err := encryption.Encrypt(refreshToken, []byte(uc.encryptionKey))
 	if err != nil {
 		logger.Log.Error("Failed to encrypt refresh token", zap.Error(err))
@@ -126,6 +130,11 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 		UserAgent:       request.UserAgent,
 	})
 	if err != nil {
+		return nil, err
+	}
+	err = uc.cacheRepository.Set(ctx, fmt.Sprintf("oauth:%s:%s", oauthUser.ID, encryptedAccessToken), 1, uc.accessTokenExpirationTime)
+	if err != nil {
+		logger.Log.Error("Failed to set cache", zap.Error(err))
 		return nil, err
 	}
 	oauthUserResponse := &domain.OAuthUserResponse{

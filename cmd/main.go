@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/pkg/auth"
+	"livoir-blog/pkg/cache"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
@@ -59,6 +60,21 @@ func main() {
 		return
 	}
 
+	// Initialize KeyDB connection
+	cacheAddress := viper.GetString("cache.address")
+	cacheUsername := viper.GetString("cache.username")
+	cachePassword := viper.GetString("cache.password")
+	cacheDB := viper.GetInt("cache.database")
+	if cacheAddress == "" {
+		logger.Log.Error("Missing required cache configuration")
+		return
+	}
+	cache, err := cache.NewKeyDBClient(context.Background(), cacheAddress, cacheUsername, cachePassword, cacheDB)
+	if err != nil {
+		logger.Log.Error("Failed to connect to cache", zap.Error(err))
+		return
+	}
+
 	// Initialize OAuth2
 	oauthGoogleConfig := auth.NewGoogleOauthConfig()
 	oauthDiscordConfig := auth.NewDiscordOauthConfig()
@@ -84,7 +100,7 @@ func main() {
 		return
 	}
 
-	repoProvider, err := app.NewRepositoryProvider(db, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
+	repoProvider, err := app.NewRepositoryProvider(db, cache, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
 	if err != nil {
 		logger.Log.Error("Failed to initialize repository provider", zap.Error(err))
 		return

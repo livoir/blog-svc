@@ -8,6 +8,7 @@ import (
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/logger"
 
+	"github.com/redis/go-redis/v9"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
 )
@@ -22,9 +23,10 @@ type RepositoryProvider struct {
 	PostRepository                 domain.PostRepository
 	PostVersionRepository          domain.PostVersionRepository
 	CategoryRepository             domain.CategoryRepository
+	CacheRepository                domain.CacheRepository
 }
 
-func NewRepositoryProvider(db *sql.DB, oauthGoogleConfig, oauthDiscordConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*RepositoryProvider, error) {
+func NewRepositoryProvider(db *sql.DB, cache *redis.Client, oauthGoogleConfig, oauthDiscordConfig *oauth2.Config, privateKey *rsa.PrivateKey, publicKey *rsa.PublicKey) (*RepositoryProvider, error) {
 	postRepo, err := repository.NewPostRepository(db)
 	if err != nil {
 		logger.Log.Error("Failed to initialize post repository", zap.Error(err))
@@ -70,6 +72,11 @@ func NewRepositoryProvider(db *sql.DB, oauthGoogleConfig, oauthDiscordConfig *oa
 		logger.Log.Error("Failed to initialize administrator session repository", zap.Error(err))
 		return nil, err
 	}
+	cacheRepo, err := repository.NewCacheRepositoryRedis(cache)
+	if err != nil {
+		logger.Log.Error("Failed to initialize cache repository", zap.Error(err))
+		return nil, err
+	}
 
 	return &RepositoryProvider{
 		transactor,
@@ -81,6 +88,7 @@ func NewRepositoryProvider(db *sql.DB, oauthGoogleConfig, oauthDiscordConfig *oa
 		postRepo,
 		postVersionRepo,
 		categoryRepo,
+		cacheRepo,
 	}, nil
 }
 

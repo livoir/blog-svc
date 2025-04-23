@@ -3,9 +3,11 @@ package e2e
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"livoir-blog/internal/app"
 	"livoir-blog/mocks"
 	"livoir-blog/pkg/auth"
+	"livoir-blog/pkg/cache"
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
@@ -23,6 +25,7 @@ type E2ETestSuite struct {
 	db                  *sql.DB
 	router              *gin.Engine
 	pgContainer         testcontainers.Container
+	keydbContainer      testcontainers.Container
 	mockOauthRepository *mocks.OAuthRepository
 	repoProvider        *app.RepositoryProvider
 	accessToken         string
@@ -83,6 +86,35 @@ func (suite *E2ETestSuite) SetupSuite() {
 	if err := database.RunMigrations(suite.db, migrationPath); err != nil {
 		suite.T().Fatalf("failed to run migrations: %s", err)
 	}
+
+	keydbReq := testcontainers.ContainerRequest{
+		Image:        "eqalpha/keydb:latest",
+		ExposedPorts: []string{"6379/tcp"},
+	}
+
+	keydbContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
+		ContainerRequest: keydbReq,
+		Started:          true,
+	})
+	if err != nil {
+		suite.T().Fatalf("failed to start KeyDB container: %s", err)
+	}
+	suite.keydbContainer = keydbContainer
+
+	keydbHost, err := keydbContainer.Host(ctx)
+	if err != nil {
+		suite.T().Fatalf("failed to get KeyDB container host: %s", err)
+	}
+	keydbPort, err := keydbContainer.MappedPort(ctx, "6379")
+	if err != nil {
+		suite.T().Fatalf("failed to get KeyDB container port: %s", err)
+	}
+
+	keydb, err := cache.NewKeyDBClient(ctx, fmt.Sprintf("%s:%s", keydbHost, keydbPort.Port()), "", "", 0)
+	if err != nil {
+		suite.T().Fatalf("failed to connect to KeyDB: %s", err)
+	}
+
 	oauthGoogleConfig := auth.NewGoogleOauthConfig()
 	oauthDiscordConfig := auth.NewDiscordOauthConfig()
 	privateKey, publicKey, err := jwt.NewJWT("../../configs/server.key", "../../configs/server.pem")
@@ -90,7 +122,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 		suite.T().Fatalf("failed to initialize JWT keys: %s", err)
 	}
 
-	repoProvider, err := app.NewRepositoryProvider(suite.db, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
+	repoProvider, err := app.NewRepositoryProvider(suite.db, keydb, oauthGoogleConfig, oauthDiscordConfig, privateKey, publicKey)
 	if err != nil {
 		suite.T().Fatalf("failed to initialize repository provider: %s", err)
 	}
@@ -98,7 +130,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 
 	repoProvider.SetOauthRepositories(suite.mockOauthRepository, suite.mockOauthRepository)
 	suite.repoProvider = repoProvider
-	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
+	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60*time.Second), time.Duration(120*time.Second))
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
@@ -116,6 +148,11 @@ func (suite *E2ETestSuite) TearDownSuite() {
 	if suite.pgContainer != nil {
 		if err := suite.pgContainer.Terminate(context.Background()); err != nil {
 			suite.T().Fatalf("failed to terminate container: %s", err)
+		}
+	}
+	if suite.keydbContainer != nil {
+		if err := suite.keydbContainer.Terminate(context.Background()); err != nil {
+			suite.T().Fatalf("failed to terminate KeyDB container: %s", err)
 		}
 	}
 }
