@@ -56,6 +56,7 @@ func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 		encryptionKey:              encryptionKey,
 		accessTokenExpirationTime:  accessTokenExpirationTime,
 		refreshTokenExpirationTime: refreshTokenExpirationTime,
+		cacheRepository:            cacheRepository,
 	}, nil
 }
 
@@ -131,7 +132,11 @@ func (uc *OAuthUsecase) LoginCallback(ctx context.Context, request *domain.Login
 	if err != nil {
 		return nil, err
 	}
-	err = uc.cacheRepository.Set(ctx, fmt.Sprintf("oauth:%s:%s", oauthUser.ID, encryptedAccessToken), struct{}{}, uc.accessTokenExpirationTime)
+	err = uc.cacheRepository.Set(ctx, fmt.Sprintf("oauth:%s:%s", oauthUser.ID, encryptedAccessToken), 1, uc.accessTokenExpirationTime)
+	if err != nil {
+		logger.Log.Error("Failed to set cache", zap.Error(err))
+		return nil, err
+	}
 	oauthUserResponse := &domain.OAuthUserResponse{
 		User:         oauthUser,
 		AccessToken:  accessToken,

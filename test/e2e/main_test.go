@@ -88,11 +88,8 @@ func (suite *E2ETestSuite) SetupSuite() {
 	}
 
 	keydbReq := testcontainers.ContainerRequest{
-		Image:        "eqalpha/keydb:arm64_v6.3.4",
+		Image:        "eqalpha/keydb:latest",
 		ExposedPorts: []string{"6379/tcp"},
-		WaitingFor: wait.ForLog("Ready to accept connections").
-			WithOccurrence(2).
-			WithStartupTimeout(30 * time.Second),
 	}
 
 	keydbContainer, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -133,7 +130,7 @@ func (suite *E2ETestSuite) SetupSuite() {
 
 	repoProvider.SetOauthRepositories(suite.mockOauthRepository, suite.mockOauthRepository)
 	suite.repoProvider = repoProvider
-	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60), time.Duration(120))
+	suite.router, err = app.SetupRouter(suite.db, repoProvider, encryptionKey, time.Duration(60*time.Second), time.Duration(120*time.Second))
 	if err != nil {
 		suite.T().Fatalf("failed to setup router: %s", err)
 	}
@@ -151,6 +148,11 @@ func (suite *E2ETestSuite) TearDownSuite() {
 	if suite.pgContainer != nil {
 		if err := suite.pgContainer.Terminate(context.Background()); err != nil {
 			suite.T().Fatalf("failed to terminate container: %s", err)
+		}
+	}
+	if suite.keydbContainer != nil {
+		if err := suite.keydbContainer.Terminate(context.Background()); err != nil {
+			suite.T().Fatalf("failed to terminate KeyDB container: %s", err)
 		}
 	}
 }
