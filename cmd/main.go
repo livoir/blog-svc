@@ -9,6 +9,7 @@ import (
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
+	"livoir-blog/pkg/otel"
 	"net/http"
 	"os"
 	"os/signal"
@@ -35,6 +36,14 @@ func main() {
 		logger.Log.Error("Failed to load config", zap.Error(err))
 		return
 	}
+
+	// Init otel
+	shutdownOtel, err := otel.NewTracerProvider(context.Background())
+	if err != nil {
+		logger.Log.Error("Failed to initialize OpenTelemetry", zap.Error(err))
+		return
+	}
+
 	// Read database connection details from Viper
 	dbHost := viper.GetString("db.host")
 	dbPort := viper.GetString("db.port")
@@ -153,6 +162,17 @@ func main() {
 	// Close database connection
 	if err := db.Close(); err != nil {
 		logger.Log.Error("Error closing database connection:", zap.Error(err))
+	}
+
+	// Close cache connection
+	if err := cache.Close(); err != nil {
+		logger.Log.Error("Error closing cache connection:", zap.Error(err))
+	}
+
+	// Shutdown OpenTelemetry
+	if err := shutdownOtel(context.Background()); err != nil {
+		logger.Log.Error("Failed to shutdown OpenTelemetry", zap.Error(err))
+		return
 	}
 
 	logger.Log.Info("Server exited properly")
