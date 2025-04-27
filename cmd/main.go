@@ -38,7 +38,8 @@ func main() {
 	}
 
 	// Init otel
-	shutdownOtel, err := otel.NewTracerProvider(context.Background())
+	otelHost := viper.GetString("otel.host")
+	shutdownOtel, err := otel.NewTracerProvider(context.Background(), otelHost)
 	if err != nil {
 		logger.Log.Error("Failed to initialize OpenTelemetry", zap.Error(err))
 		return

@@ -10,8 +10,8 @@ import (
 	"google.golang.org/grpc"
 )
 
-func NewTracerProvider(ctx context.Context) (func(context.Context) error, error) {
-	conn, err := grpc.NewClient("localhost:4317")
+func NewTracerProvider(ctx context.Context, host string) (func(context.Context) error, error) {
+	conn, err := grpc.NewClient(host)
 	if err != nil {
 		return nil, err
 	}
@@ -24,7 +24,7 @@ func NewTracerProvider(ctx context.Context) (func(context.Context) error, error)
 		trace.WithResource(
 			resource.NewWithAttributes(
 				semconv.SchemaURL,
-				semconv.ServiceNameKey.String("my-service"),
+				semconv.ServiceNameKey.String("blog-svc"),
 			),
 		),
 	)
