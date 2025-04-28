@@ -17,6 +17,9 @@ cache:
   password: <YOUR_CACHE_PASSWORD> # Optional, if your cache server requires authentication
   db: 0
 
+otel:
+  host: "<YOUR_OTEL_HOST>" # OpenTelemetry host
+
 auth:
   jwt:
     private_key: "configs/server.key" # Path to your private key -> generate with `make generate-cert`
