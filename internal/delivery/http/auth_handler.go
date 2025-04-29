@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +20,7 @@ type AuthHandler struct {
 	OAuthDiscordUsecase    domain.OAuthUsecase
 	AccessTokenExpiration  time.Duration
 	RefreshTokenExpiration time.Duration
+	tracer                 trace.Tracer
 }
 
 func NewAuthHandler(r *gin.RouterGroup, googleUsecase, discordUsecase domain.OAuthUsecase, accessTokenExpiration, refreshTokenExpiration time.Duration) {
@@ -26,6 +29,7 @@ func NewAuthHandler(r *gin.RouterGroup, googleUsecase, discordUsecase domain.OAu
 		OAuthDiscordUsecase:    discordUsecase,
 		AccessTokenExpiration:  accessTokenExpiration,
 		RefreshTokenExpiration: refreshTokenExpiration,
+		tracer:                 otel.Tracer("auth_handler"),
 	}
 	r.GET("/google/login", handler.GoogleLogin)
 	r.GET("/google/callback", handler.GoogleCallback)
@@ -34,6 +38,8 @@ func NewAuthHandler(r *gin.RouterGroup, googleUsecase, discordUsecase domain.OAu
 }
 
 func (h *AuthHandler) DiscordLogin(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "DiscordLogin")
+	defer span.End()
 	// Generate state token
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -54,7 +60,7 @@ func (h *AuthHandler) DiscordLogin(c *gin.Context) {
 	c.SetCookie("redirect", redirect, 3600, "/", "", true, true)
 
 	// Redirect to Discord's consent page
-	url := h.OAuthDiscordUsecase.GetRedirectLoginUrl(c.Request.Context(), state)
+	url := h.OAuthDiscordUsecase.GetRedirectLoginUrl(ctx, state)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
