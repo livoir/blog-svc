@@ -9,7 +9,7 @@ import (
 	"livoir-blog/pkg/database"
 	"livoir-blog/pkg/jwt"
 	"livoir-blog/pkg/logger"
-	"livoir-blog/pkg/otel"
+	"livoir-blog/pkg/opentelemetry"
 	"net/http"
 	"os"
 	"os/signal"
@@ -39,7 +39,7 @@ func main() {
 
 	// Init otel
 	otelHost := viper.GetString("otel.host")
-	shutdownOtel, err := otel.NewTracerProvider(context.Background(), otelHost)
+	shutdownOtel, err := opentelemetry.NewTracerProvider(context.Background(), otelHost)
 	if err != nil {
 		logger.Log.Error("Failed to initialize OpenTelemetry", zap.Error(err))
 		return
