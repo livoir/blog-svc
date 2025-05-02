@@ -102,6 +102,8 @@ func (h *AuthHandler) DiscordCallback(c *gin.Context) {
 }
 
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "GoogleLogin")
+	defer span.End()
 	// Generate state token
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -127,6 +129,8 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 }
 
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "GoogleCallback")
+	defer span.End()
 	// Verify state
 	state, err := c.Cookie("state")
 	if err != nil {
