@@ -65,6 +65,8 @@ func (h *AuthHandler) DiscordLogin(c *gin.Context) {
 }
 
 func (h *AuthHandler) DiscordCallback(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "DiscordCallback")
+	defer span.End()
 	// Verify state
 	state, err := c.Cookie("state")
 	if err != nil {
