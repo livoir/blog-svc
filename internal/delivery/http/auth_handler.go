@@ -65,6 +65,8 @@ func (h *AuthHandler) DiscordLogin(c *gin.Context) {
 }
 
 func (h *AuthHandler) DiscordCallback(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "DiscordCallback")
+	defer span.End()
 	// Verify state
 	state, err := c.Cookie("state")
 	if err != nil {
@@ -86,7 +88,7 @@ func (h *AuthHandler) DiscordCallback(c *gin.Context) {
 		IpAddress: c.ClientIP(),
 		UserAgent: c.Request.UserAgent(),
 	}
-	user, err := h.OAuthDiscordUsecase.LoginCallback(c.Request.Context(), request)
+	user, err := h.OAuthDiscordUsecase.LoginCallback(ctx, request)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -100,6 +102,8 @@ func (h *AuthHandler) DiscordCallback(c *gin.Context) {
 }
 
 func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "GoogleLogin")
+	defer span.End()
 	// Generate state token
 	b := make([]byte, 32)
 	_, err := rand.Read(b)
@@ -120,11 +124,13 @@ func (h *AuthHandler) GoogleLogin(c *gin.Context) {
 	c.SetCookie("redirect", redirect, 3600, "/", "", true, true)
 
 	// Redirect to Google's consent page
-	url := h.OAuthGoogleUsecase.GetRedirectLoginUrl(c.Request.Context(), state)
+	url := h.OAuthGoogleUsecase.GetRedirectLoginUrl(ctx, state)
 	c.Redirect(http.StatusTemporaryRedirect, url)
 }
 
 func (h *AuthHandler) GoogleCallback(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "GoogleCallback")
+	defer span.End()
 	// Verify state
 	state, err := c.Cookie("state")
 	if err != nil {
@@ -146,7 +152,7 @@ func (h *AuthHandler) GoogleCallback(c *gin.Context) {
 		IpAddress: c.ClientIP(),
 		UserAgent: c.Request.UserAgent(),
 	}
-	user, err := h.OAuthGoogleUsecase.LoginCallback(c.Request.Context(), request)
+	user, err := h.OAuthGoogleUsecase.LoginCallback(ctx, request)
 	if err != nil {
 		handleError(c, err)
 		return
