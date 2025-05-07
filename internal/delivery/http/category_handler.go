@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/trace"
 )
 
@@ -19,6 +20,7 @@ type CategoryHandler struct {
 func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 	handler := &CategoryHandler{
 		CategoryUsecase: usecase,
+		tracer:          otel.Tracer("category-handler"),
 	}
 	r.POST("", handler.CreateCategory)
 	r.PUT("/:id", handler.UpdateCategory)
