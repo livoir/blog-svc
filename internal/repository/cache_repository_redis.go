@@ -8,11 +8,14 @@ import (
 	"time"
 
 	"github.com/redis/go-redis/v9"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type CacheRepositoryRedis struct {
 	Client *redis.Client
+	tracer trace.Tracer
 }
 
 func NewCacheRepositoryRedis(client *redis.Client) (domain.CacheRepository, error) {
@@ -20,7 +23,10 @@ func NewCacheRepositoryRedis(client *redis.Client) (domain.CacheRepository, erro
 		logger.Log.Error("Redis client is nil")
 		return nil, common.ErrInternalServerError
 	}
-	return &CacheRepositoryRedis{Client: client}, nil
+	return &CacheRepositoryRedis{
+		Client: client,
+		tracer: otel.Tracer("cache_repository_redis"),
+	}, nil
 }
 
 func (c *CacheRepositoryRedis) Clear(ctx context.Context) error {

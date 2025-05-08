@@ -9,15 +9,21 @@ import (
 	"livoir-blog/pkg/ulid"
 	"net/http"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type AdministratorSessionRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	tracer trace.Tracer
 }
 
 func NewAdministratorSessionRepository(db *sql.DB) (domain.AdministratorSessionRepository, error) {
-	return &AdministratorSessionRepository{db: db}, nil
+	return &AdministratorSessionRepository{
+		db:     db,
+		tracer: otel.Tracer("administrator_session_repository"),
+	}, nil
 }
 
 func (a *AdministratorSessionRepository) Insert(ctx context.Context, tx domain.Transaction, session *domain.AdministratorSession) error {
