@@ -10,6 +10,8 @@ import (
 	"time"
 
 	"github.com/microcosm-cc/bluemonday"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -18,6 +20,7 @@ type postUsecase struct {
 	postVersionRepo domain.PostVersionRepository
 	transactor      domain.Transactor
 	sanitizer       *bluemonday.Policy
+	tracer          trace.Tracer
 }
 
 func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersionRepository, transactor domain.Transactor) (domain.PostUsecase, error) {
@@ -29,6 +32,7 @@ func NewPostUsecase(repo domain.PostRepository, postVersionRepo domain.PostVersi
 		postVersionRepo: postVersionRepo,
 		transactor:      transactor,
 		sanitizer:       bluemonday.UGCPolicy(),
+		tracer:          otel.Tracer("post_usecase"),
 	}, nil
 }
 
