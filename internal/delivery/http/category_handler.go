@@ -8,15 +8,19 @@ import (
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type CategoryHandler struct {
 	CategoryUsecase domain.CategoryUsecase
+	tracer          trace.Tracer
 }
 
 func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 	handler := &CategoryHandler{
 		CategoryUsecase: usecase,
+		tracer:          otel.Tracer("category-handler"),
 	}
 	r.POST("", handler.CreateCategory)
 	r.PUT("/:id", handler.UpdateCategory)
@@ -24,6 +28,8 @@ func NewCategoryHandler(r *gin.RouterGroup, usecase domain.CategoryUsecase) {
 }
 
 func (h *CategoryHandler) CreateCategory(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "CreateCategory")
+	defer span.End()
 	var request domain.CategoryRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
 		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
@@ -33,7 +39,7 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	response, err := h.CategoryUsecase.Create(c.Request.Context(), &request)
+	response, err := h.CategoryUsecase.Create(ctx, &request)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -42,6 +48,8 @@ func (h *CategoryHandler) CreateCategory(c *gin.Context) {
 }
 
 func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "UpdateCategory")
+	defer span.End()
 	var request domain.CategoryRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
 		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
@@ -56,7 +64,7 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	response, err := h.CategoryUsecase.Update(c.Request.Context(), id, &request)
+	response, err := h.CategoryUsecase.Update(ctx, id, &request)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -65,6 +73,8 @@ func (h *CategoryHandler) UpdateCategory(c *gin.Context) {
 }
 
 func (h *CategoryHandler) AttachCategoryToPostVersion(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "AttachCategoryToPostVersion")
+	defer span.End()
 	var request domain.AttachCategoryToPostVersionRequestDTO
 	if err := c.ShouldBindJSON(&request); err != nil {
 		handleError(c, common.NewCustomError(http.StatusBadRequest, err.Error()))
@@ -74,7 +84,7 @@ func (h *CategoryHandler) AttachCategoryToPostVersion(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	if err := h.CategoryUsecase.AttachToPostVersion(c.Request.Context(), &request); err != nil {
+	if err := h.CategoryUsecase.AttachToPostVersion(ctx, &request); err != nil {
 		handleError(c, err)
 		return
 	}

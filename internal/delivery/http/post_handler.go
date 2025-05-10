@@ -6,15 +6,19 @@ import (
 	"livoir-blog/internal/domain"
 
 	"github.com/gin-gonic/gin"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 )
 
 type PostHandler struct {
 	PostUsecase domain.PostUsecase
+	tracer      trace.Tracer
 }
 
 func NewPostHandler(r *gin.RouterGroup, usecase domain.PostUsecase) {
 	handler := &PostHandler{
 		PostUsecase: usecase,
+		tracer:      otel.Tracer("post-handler"),
 	}
 	r.GET("/:id", handler.GetPost)
 	r.POST("", handler.CreatePost)
@@ -32,12 +36,14 @@ func (h *PostHandler) validateAndGetPostID(c *gin.Context) (string, bool) {
 }
 
 func (h *PostHandler) GetPost(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "GetPost")
+	defer span.End()
 	id, ok := h.validateAndGetPostID(c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	post, err := h.PostUsecase.GetByID(c.Request.Context(), id)
+	post, err := h.PostUsecase.GetByID(ctx, id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -46,6 +52,8 @@ func (h *PostHandler) GetPost(c *gin.Context) {
 }
 
 func (h *PostHandler) CreatePost(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "CreatePost")
+	defer span.End()
 	var post domain.CreatePostDTO
 	if err := c.ShouldBindJSON(&post); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -55,7 +63,7 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	response, err := h.PostUsecase.Create(c.Request.Context(), &post)
+	response, err := h.PostUsecase.Create(ctx, &post)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -64,6 +72,8 @@ func (h *PostHandler) CreatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) UpdatePost(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "UpdatePost")
+	defer span.End()
 	id, ok := h.validateAndGetPostID(c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
@@ -78,7 +88,7 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 		handleError(c, err)
 		return
 	}
-	response, err := h.PostUsecase.Update(c.Request.Context(), id, &post)
+	response, err := h.PostUsecase.Update(ctx, id, &post)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -87,12 +97,14 @@ func (h *PostHandler) UpdatePost(c *gin.Context) {
 }
 
 func (h *PostHandler) PublishPost(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "PublishPost")
+	defer span.End()
 	id, ok := h.validateAndGetPostID(c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	response, err := h.PostUsecase.Publish(c.Request.Context(), id)
+	response, err := h.PostUsecase.Publish(ctx, id)
 	if err != nil {
 		handleError(c, err)
 		return
@@ -101,12 +113,14 @@ func (h *PostHandler) PublishPost(c *gin.Context) {
 }
 
 func (h *PostHandler) DeletePostVersion(c *gin.Context) {
+	ctx, span := h.tracer.Start(c.Request.Context(), "DeletePostVersion")
+	defer span.End()
 	id, ok := h.validateAndGetPostID(c)
 	if !ok {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid post ID"})
 		return
 	}
-	err := h.PostUsecase.DeletePostVersionByPostID(c.Request.Context(), id)
+	err := h.PostUsecase.DeletePostVersionByPostID(ctx, id)
 	if err != nil {
 		handleError(c, err)
 		return

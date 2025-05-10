@@ -9,6 +9,8 @@ import (
 	"livoir-blog/pkg/logger"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -22,6 +24,7 @@ type OAuthUsecase struct {
 	encryptionKey              string
 	accessTokenExpirationTime  time.Duration
 	refreshTokenExpirationTime time.Duration
+	tracer                     trace.Tracer
 }
 
 func NewOauthUsecase(oauthRepo domain.OAuthRepository,
@@ -57,6 +60,7 @@ func NewOauthUsecase(oauthRepo domain.OAuthRepository,
 		accessTokenExpirationTime:  accessTokenExpirationTime,
 		refreshTokenExpirationTime: refreshTokenExpirationTime,
 		cacheRepository:            cacheRepository,
+		tracer:                     otel.Tracer("oauth_usecase"),
 	}, nil
 }
 

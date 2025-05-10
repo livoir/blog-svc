@@ -9,11 +9,14 @@ import (
 	"net/http"
 
 	"github.com/lib/pq"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
 type AdministratorRepositoryImpl struct {
-	db *sql.DB
+	db     *sql.DB
+	tracer trace.Tracer
 }
 
 func NewAdministratorRepository(db *sql.DB) (domain.AdministratorRepository, error) {
@@ -22,7 +25,10 @@ func NewAdministratorRepository(db *sql.DB) (domain.AdministratorRepository, err
 		return nil, common.ErrInternalServerError
 	}
 
-	return &AdministratorRepositoryImpl{db: db}, nil
+	return &AdministratorRepositoryImpl{
+		db:     db,
+		tracer: otel.Tracer("administrator_repository"),
+	}, nil
 }
 
 func (r *AdministratorRepositoryImpl) FindByEmail(ctx context.Context, email string) (*domain.Administrator, error) {

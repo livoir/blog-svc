@@ -9,6 +9,8 @@ import (
 	"net/http"
 	"time"
 
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 )
 
@@ -16,6 +18,7 @@ type CategoryUsecase struct {
 	transactor      domain.Transactor
 	categoryRepo    domain.CategoryRepository
 	postVersionRepo domain.PostVersionRepository
+	tracer          trace.Tracer
 }
 
 func NewCategoryUsecase(transactor domain.Transactor, categoryRepo domain.CategoryRepository, postVersionRepo domain.PostVersionRepository) (domain.CategoryUsecase, error) {
@@ -26,6 +29,7 @@ func NewCategoryUsecase(transactor domain.Transactor, categoryRepo domain.Catego
 		transactor:      transactor,
 		categoryRepo:    categoryRepo,
 		postVersionRepo: postVersionRepo,
+		tracer:          otel.Tracer("category_usecase"),
 	}, nil
 }
 
